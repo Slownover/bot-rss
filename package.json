@@ -1,0 +1,17 @@
+{
+  "name": "rss",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Slownover",
+  "license": "",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.26.2",
+    "rss-parser": "^3.13.0"
+  }
+}
