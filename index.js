@@ -13,6 +13,9 @@ const {
 const fs = require("fs");
 const Parser = require("rss-parser");
 const translateToFrench = require("./translate");
+const cheerio = require("cheerio");
+const sharp = require("sharp");
+const { URL } = require("url");
 
 const config = require("./config.json");
 const parser = new Parser();
@@ -50,6 +53,72 @@ async function registerCommands() {
     { body: commandsJSON },
   );
   console.log("✔ Commandes enregistrées");
+}
+
+async function convertIcoToPng(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+
+    const png = await sharp(buffer).png().toBuffer();
+
+    // On encode en base64 pour Discord
+    return `data:image/png;base64,${png.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+async function getSiteIcon(domain) {
+  const baseUrl = `https://${domain}`;
+
+  let html;
+  try {
+    const res = await fetch(baseUrl);
+    html = await res.text();
+  } catch (err) {
+    return null;
+  }
+
+  const $ = cheerio.load(html);
+
+  // Sélectionne toutes les balises <link> contenant "icon"
+  const links = $('link[rel*="icon"]');
+
+  for (const el of links.toArray()) {
+    const href = $(el).attr("href");
+    if (!href) continue;
+
+    // Résolution propre de l'URL avec le module url
+    const iconUrl = new URL(href, baseUrl).href;
+
+    try {
+      const res = await fetch(iconUrl);
+      if (res.ok && res.headers.get("content-type")?.includes("image")) {
+        return await convertIcoToPng(iconUrl);
+      }
+    } catch (err) {
+      continue;
+    }
+  }
+
+  // fallback : favicon.ico
+  return getFavicon(domain);
+}
+
+async function getFavicon(domain) {
+  const url = `https://${domain}/favicon.ico`;
+
+  try {
+    const res = await fetch(url);
+    if (res.ok && res.headers.get("content-type")?.includes("image")) {
+      return await convertIcoToPng(url);
+    }
+  } catch (err) {}
+
+  return null;
 }
 
 function truncateDiscord(str, limit = 2000) {
@@ -117,6 +186,7 @@ async function checkFeed(feed) {
                   media: {
                     url:
                       latest?.enclosure?.url ??
+                      (await getSiteIcon(getDomain(latest.link))) ??
                       "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128",
                   },
                 },
