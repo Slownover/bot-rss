@@ -10,6 +10,7 @@ const {
   ComponentType,
   MessageFlags,
 } = require("discord.js");
+
 const fs = require("fs");
 const Parser = require("rss-parser");
 const translateToFrench = require("./translate");
@@ -55,22 +56,20 @@ async function registerCommands() {
   console.log("✔ Commandes enregistrées");
 }
 
+// Convertit ICO → PNG (buffer)
 async function convertIcoToPng(url) {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
 
     const buffer = Buffer.from(await res.arrayBuffer());
-
-    const png = await sharp(buffer).png().toBuffer();
-
-    // On encode en base64 pour Discord
-    return `data:image/png;base64,${png.toString("base64")}`;
+    return await sharp(buffer).png().toBuffer();
   } catch {
     return null;
   }
 }
 
+// Récupère favicon via <link rel="icon">
 async function getSiteIcon(domain) {
   const baseUrl = `https://${domain}`;
 
@@ -78,20 +77,17 @@ async function getSiteIcon(domain) {
   try {
     const res = await fetch(baseUrl);
     html = await res.text();
-  } catch (err) {
+  } catch {
     return null;
   }
 
   const $ = cheerio.load(html);
-
-  // Sélectionne toutes les balises <link> contenant "icon"
   const links = $('link[rel*="icon"]');
 
   for (const el of links.toArray()) {
     const href = $(el).attr("href");
     if (!href) continue;
 
-    // Résolution propre de l'URL avec le module url
     const iconUrl = new URL(href, baseUrl).href;
 
     try {
@@ -99,15 +95,13 @@ async function getSiteIcon(domain) {
       if (res.ok && res.headers.get("content-type")?.includes("image")) {
         return await convertIcoToPng(iconUrl);
       }
-    } catch (err) {
-      continue;
-    }
+    } catch {}
   }
 
-  // fallback : favicon.ico
   return getFavicon(domain);
 }
 
+// Fallback favicon.ico
 async function getFavicon(domain) {
   const url = `https://${domain}/favicon.ico`;
 
@@ -116,7 +110,7 @@ async function getFavicon(domain) {
     if (res.ok && res.headers.get("content-type")?.includes("image")) {
       return await convertIcoToPng(url);
     }
-  } catch (err) {}
+  } catch {}
 
   return null;
 }
@@ -124,14 +118,9 @@ async function getFavicon(domain) {
 function truncateDiscord(str, limit = 2000) {
   if (str.length <= limit) return str;
 
-  // On coupe d'abord à la limite
   let cut = str.slice(0, limit);
-
-  // On recule jusqu'au dernier espace pour éviter de couper un mot
   const lastSpace = cut.lastIndexOf(" ");
-  if (lastSpace > 0) {
-    cut = cut.slice(0, lastSpace);
-  }
+  if (lastSpace > 0) cut = cut.slice(0, lastSpace);
 
   return cut + "...";
 }
@@ -140,12 +129,11 @@ function getDomain(url) {
   try {
     return new URL(url).hostname;
   } catch {
-    return null; // si l'URL est invalide
+    return null;
   }
 }
 
 // Vérification d’un flux
-
 async function checkFeed(feed) {
   try {
     const parsed = await parser.parseURL(feed.url);
@@ -169,44 +157,71 @@ async function checkFeed(feed) {
       );
 
       const channel = client.channels.cache.get(feed.channel);
-      if (channel)
-        channel.send({
-          components: [
-            new ContainerBuilder()
-              .addSectionComponents({
-                components: [
-                  {
-                    type: ComponentType.TextDisplay,
-                    content: `## [${titleFR}](${latest.link})\n**${latest.creator ?? getDomain(latest.link)}**`,
-                  },
-                ],
-                accessory: {
-                  type: ComponentType.Thumbnail,
-                  spoiler: false,
-                  media: {
-                    url:
-                      latest?.enclosure?.url ??
-                      (await getSiteIcon(getDomain(latest.link))) ??
-                      "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128",
-                  },
+
+      // IMAGE PRINCIPALE
+      let illustration = latest?.enclosure?.url;
+      let attachmentFile = null;
+
+      // Si pas d’image → favicon
+      if (!illustration) {
+        const domain = getDomain(latest.link);
+        const faviconBuffer = await getSiteIcon(domain);
+
+        if (faviconBuffer) {
+          attachmentFile = {
+            attachment: faviconBuffer,
+            name: "favicon.png",
+          };
+
+          illustration = "attachment://favicon.png";
+        }
+      }
+
+      // Fallback final
+      if (!illustration) {
+        illustration =
+          "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128";
+      }
+
+      const messagePayload = {
+        components: [
+          new ContainerBuilder()
+            .addSectionComponents({
+              components: [
+                {
+                  type: ComponentType.TextDisplay,
+                  content: `## [${titleFR}](${latest.link})\n**${latest.creator ?? getDomain(latest.link)}**`,
                 },
-              })
-              .addSeparatorComponents((s) => s)
-              .addTextDisplayComponents((t) =>
-                t.setContent(descFR ?? "Aucune description disponible"),
-              )
-              .addSeparatorComponents((s) => s)
-              .addActionRowComponents((row) =>
-                row.addComponents(
-                  new ButtonBuilder()
-                    .setStyle(ButtonStyle.Link)
-                    .setLabel("Voir")
-                    .setURL(latest.link),
-                ),
+              ],
+              accessory: {
+                type: ComponentType.Thumbnail,
+                spoiler: false,
+                media: { url: illustration },
+              },
+            })
+            .addSeparatorComponents((s) => s)
+            .addTextDisplayComponents((t) =>
+              t.setContent(descFR ?? "Aucune description disponible"),
+            )
+            .addSeparatorComponents((s) => s)
+            .addActionRowComponents((row) =>
+              row.addComponents(
+                new ButtonBuilder()
+                  .setStyle(ButtonStyle.Link)
+                  .setLabel("Voir")
+                  .setURL(latest.link),
               ),
-          ],
-          flags: MessageFlags.IsComponentsV2,
-        });
+            ),
+        ],
+        flags: MessageFlags.IsComponentsV2,
+      };
+
+      // Ajout du fichier si favicon utilisé
+      if (attachmentFile) {
+        messagePayload.files = [attachmentFile];
+      }
+
+      if (channel) channel.send(messagePayload);
     }
   } catch (err) {
     console.error(`Erreur RSS (${feed.url}) :`, err);
@@ -233,7 +248,7 @@ client.on("interactionCreate", async (interaction) => {
 // Ready
 client.once("clientReady", () => {
   console.log(`Connecté en tant que ${client.user.tag}`);
-  setInterval(checkAllFeeds, 60_000);
+  setInterval(checkAllFeeds, 2 * 60_000);
 });
 
 // Start
