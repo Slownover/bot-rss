@@ -248,7 +248,7 @@ client.on("interactionCreate", async (interaction) => {
 // Ready
 client.once("clientReady", () => {
   console.log(`Connecté en tant que ${client.user.tag}`);
-  setInterval(checkAllFeeds, 2 * 60_000);
+  setInterval(checkAllFeeds, config.rssFetchIntervalMs);
 });
 
 // Start

@@ -2,5 +2,6 @@
   "token": "",
   "clientId": "",
   "guildId": "",
-  "googleApiKey": ""
+  "googleApiKey": "",
+  "rssFetchIntervalMs": 120000
 }
