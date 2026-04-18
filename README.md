@@ -24,9 +24,12 @@ npm install
 
 ## ⚙️ Configuration
 
-Before running the bot, you need to create a configuration file.  
-By default, the project includes a `config-example.json` file, which serves as a template.  
-To configure the bot, copy this file and rename it to `config.json`:
+Before running the bot, you need to create the required configuration files.
+
+### 📁 1. Create `config.json`
+
+The project includes a `config-example.json` file, which serves as a template.  
+Copy it and rename it to `config.json`:
 
 ```bash
 cp config-example.json config.json
@@ -34,7 +37,19 @@ cp config-example.json config.json
 
 Then fill in the required fields according to your setup.
 
-### 🔧 Available Settings
+### 📁 2. Create `rss.json`
+
+RSS feed settings are stored separately.  
+A template file named `rss-example.json` is provided.  
+Copy it and rename it to `rss.json`:
+
+```bash
+cp rss-example.json rss.json
+```
+
+You can then add your RSS feeds inside this file.
+
+### 🔧 Available Settings (`config.json`)
 
 - **token** — Your bot token (required to authenticate with Discord).
 - **guildId** — The ID of the guild/server where the bot will operate.
