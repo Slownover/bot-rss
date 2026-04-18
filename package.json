@@ -1,15 +1,32 @@
 {
-  "name": "rss",
+  "name": "bot-rss",
   "version": "1.0.0",
-  "description": "",
+  "description": "A Discord bot that monitors RSS feeds and posts updates.",
+  "author": "Slownover",
+  "license": "MIT",
+  "type": "commonjs",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "Slownover",
-  "license": "",
-  "type": "commonjs",
+  "keywords": [
+    "bot",
+    "discord",
+    "discord.js",
+    "javascript",
+    "rss"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Slownover/bot-rss.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Slownover/bot-rss/issues"
+  },
+  "homepage": "https://github.com/Slownover/bot-rss#readme",
   "dependencies": {
     "axios": "^1.15.0",
     "cacheable-lookup": "^7.0.0",
