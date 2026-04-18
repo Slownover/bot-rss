@@ -1,6 +1,5 @@
 {
   "token": "",
-  "clientId": "",
   "guildId": "",
   "googleApiKey": "",
   "rssFetchIntervalMs": 120000,
