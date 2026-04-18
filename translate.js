@@ -1,16 +1,18 @@
-const config = require("./config.json"); // ta clé API dedans
+const config = require("./config.json");
 
-async function translate(text, sourceLang = "en", targetLang = "fr") {
+async function translate(text, targetLang = "fr", sourceLang = "auto") {
+  const params = {
+    "params.client": "gtx",
+    dataTypes: "TRANSLATION",
+    key: config.googleApiKey,
+    "query.sourceLanguage": sourceLang,
+    "query.targetLanguage": targetLang,
+    "query.text": text,
+  };
+
   const url =
     "https://translate-pa.googleapis.com/v1/translate?" +
-    new URLSearchParams({
-      "params.client": "gtx",
-      dataTypes: "TRANSLATION",
-      key: config.googleApiKey,
-      "query.sourceLanguage": sourceLang,
-      "query.targetLanguage": targetLang,
-      "query.text": text,
-    });
+    new URLSearchParams(params);
 
   try {
     const res = await fetch(url);
@@ -20,10 +22,10 @@ async function translate(text, sourceLang = "en", targetLang = "fr") {
       return data.translation;
     }
 
-    console.error("Erreur API Google :", data);
+    console.error("Error Google API :", data);
     return text;
   } catch (err) {
-    console.error("Erreur traduction :", err);
+    console.error("Error translation :", err);
     return text;
   }
 }

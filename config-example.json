@@ -3,5 +3,6 @@
   "clientId": "",
   "guildId": "",
   "googleApiKey": "",
-  "rssFetchIntervalMs": 120000
+  "rssFetchIntervalMs": 120000,
+  "targetLanguage": "en"
 }
