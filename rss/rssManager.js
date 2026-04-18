@@ -58,7 +58,9 @@ async function checkFeed(feed) {
 
       // Main image
       let illustration =
-        latest?.enclosure?.url ?? latest.mediaContent?.[0].$.url;
+        latest?.enclosure?.url ??
+        latest.mediaThumbnail?.[0].$.url ??
+        latest.mediaContent?.[0].$.url;
       let attachmentFile = null;
 
       // No image → favicon
