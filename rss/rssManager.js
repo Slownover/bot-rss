@@ -35,7 +35,7 @@ async function checkFeed(feed) {
     const latest = parsed.items[0];
     if (!latest) return;
 
-    if (!feed.last) {
+    if (!feed.last || rssData.feeds.some((f) => f.last === latest.link)) {
       feed.last = latest.link;
       saveRSS();
       return;
