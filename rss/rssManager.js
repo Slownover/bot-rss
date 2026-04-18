@@ -20,7 +20,14 @@ const {
   MessageFlags,
 } = require("discord.js");
 
-const parser = new Parser();
+const parser = new Parser({
+  customFields: {
+    item: [
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
+    ],
+  },
+});
 
 async function checkFeed(feed) {
   try {
@@ -50,7 +57,8 @@ async function checkFeed(feed) {
       const channel = client.channels.cache.get(feed.channel);
 
       // Main image
-      let illustration = latest?.enclosure?.url;
+      let illustration =
+        latest?.enclosure?.url ?? latest.mediaContent?.[0].$.url;
       let attachmentFile = null;
 
       // No image → favicon
