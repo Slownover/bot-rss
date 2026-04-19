@@ -10,7 +10,7 @@ module.exports = {
       return interaction.reply("Aucun flux enregistré.");
 
     const list = rssData.feeds
-      .map((f, i) => `${i + 1}. \`${f.url}\` → <#${f.channel}>`)
+      .map((f) => `**\`${f.id}\`**: \`${f.url}\` → <#${f.channel}>`)
       .join("\n");
 
     await interaction.reply(list);

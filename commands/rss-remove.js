@@ -4,7 +4,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("rss-remove")
     .setDescription("Supprime un flux RSS")
-    .addIntegerOption((opt) =>
+    .addStringOption((opt) =>
       opt
         .setName("id")
         .setDescription("ID du flux (voir /rss-list)")
@@ -12,13 +12,21 @@ module.exports = {
     ),
 
   async execute(interaction, rssData, saveRSS) {
-    const id = interaction.options.getInteger("id") - 1;
+    const id = interaction.options.getString("id");
 
-    if (!rssData.feeds[id]) return interaction.reply("ID invalide.");
+    // Trouver l'index du feed
+    const index = rssData.feeds.findIndex((f) => f.id === id);
 
-    const removed = rssData.feeds.splice(id, 1);
+    if (index === -1) {
+      return interaction.reply("❌ ID invalide.");
+    }
+
+    // Supprimer le feed
+    const removed = rssData.feeds.splice(index, 1)[0];
+
+    // Sauvegarder
     saveRSS();
 
-    await interaction.reply(`🗑️ Flux supprimé : \`${removed[0].url}\``);
+    await interaction.reply(`🗑️ Flux supprimé : \`${removed.url}\``);
   },
 };
