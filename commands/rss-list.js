@@ -3,11 +3,11 @@ const { SlashCommandBuilder } = require("discord.js");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("rss-list")
-    .setDescription("Liste les flux RSS enregistrés"),
+    .setDescription("List of registered RSS feeds"),
 
   async execute(interaction, rssData) {
     if (rssData.feeds.length === 0)
-      return interaction.reply("Aucun flux enregistré.");
+      return interaction.reply("No streams recorded.");
 
     const list = rssData.feeds
       .map((f) => `**\`${f.id}\`**: \`${f.url}\` → <#${f.channel}>`)

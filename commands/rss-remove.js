@@ -3,11 +3,11 @@ const { SlashCommandBuilder } = require("discord.js");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("rss-remove")
-    .setDescription("Supprime un flux RSS")
+    .setDescription("Delete an RSS feed")
     .addStringOption((opt) =>
       opt
         .setName("id")
-        .setDescription("ID du flux (voir /rss-list)")
+        .setDescription("Feed ID (see /rss-list)")
         .setRequired(true),
     ),
 
@@ -18,7 +18,7 @@ module.exports = {
     const index = rssData.feeds.findIndex((f) => f.id === id);
 
     if (index === -1) {
-      return interaction.reply("❌ ID invalide.");
+      return interaction.reply("❌ Invalid ID.");
     }
 
     // Supprimer le feed
@@ -27,6 +27,6 @@ module.exports = {
     // Sauvegarder
     saveRSS();
 
-    await interaction.reply(`🗑️ Flux supprimé : \`${removed.url}\``);
+    await interaction.reply(`🗑️ Feed deleted : \`${removed.url}\``);
   },
 };

@@ -4,14 +4,14 @@ const { generateUltimateHash } = require("../utils/function.js");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("rss-add")
-    .setDescription("Ajoute un flux RSS")
+    .setDescription("Add an RSS feed")
     .addStringOption((opt) =>
-      opt.setName("url").setDescription("URL du flux RSS").setRequired(true),
+      opt.setName("url").setDescription("RSS feed URL").setRequired(true),
     )
     .addChannelOption((opt) =>
       opt
         .setName("channel")
-        .setDescription("Salon où envoyer les articles")
+        .setDescription("Trade show where to send items")
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true),
     ),
@@ -30,7 +30,7 @@ module.exports = {
 
     saveRSS();
     await interaction.reply(
-      `✔ Flux ajouté : \`${url}\` → <#${channel.id}> (\`${id}\`)`,
+      `✔ Added feed : \`${url}\` → <#${channel.id}> (\`${id}\`)`,
     );
   },
 };
