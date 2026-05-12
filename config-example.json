@@ -2,6 +2,6 @@
   "token": "",
   "guildId": "",
   "googleApiKey": "",
-  "rssFetchIntervalMs": 120000,
+  "rssFetchCron": "*/2 * * * *",
   "targetLanguage": "en"
 }

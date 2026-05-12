@@ -54,8 +54,8 @@ You can then add your RSS feeds inside this file.
 - **token** — Your bot token (required to authenticate with Discord).
 - **guildId** — The ID of the guild/server where the bot will operate.
 - **googleApiKey** — API key used for Google-related features.
-- **rssFetchIntervalMs** — Interval (in milliseconds) at which RSS feeds are fetched.  
-  Default: `120000` (2 minutes)
+- **rssFetchCron** — Cron expression defining the execution frequency of RSS feed retrieval.  
+  Default: `*/2 * * * *` (2 minutes)
 - **targetLanguage** — Language code used for translations or processing.  
   Default: `"en"`
 
@@ -66,7 +66,7 @@ You can then add your RSS feeds inside this file.
   "token": "",
   "guildId": "",
   "googleApiKey": "",
-  "rssFetchIntervalMs": 120000,
+  "rssFetchCron": "*/2 * * * *",
   "targetLanguage": "en"
 }
 ```
