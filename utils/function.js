@@ -48,7 +48,7 @@ let counter = 0;
 
 async function generateUltimateHash(length, ...extraParams) {
   if (!length || length < 4) {
-    throw new Error("La longueur doit être >= 4.");
+    throw new Error("The length must be >= 4.");
   }
 
   const now = Date.now();
