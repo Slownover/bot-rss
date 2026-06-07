@@ -21,7 +21,10 @@ function truncateDiscord(str, limit = 2000) {
   return cut + "...";
 }
 
-let rssData = {};
+let rssData = {
+  feeds: [],
+};
+
 const rssPath = path.join(__dirname, "../rss.json");
 
 try {
