@@ -21,14 +21,19 @@ function truncateDiscord(str, limit = 2000) {
   return cut + "...";
 }
 
-let rssData = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "../rss.json"), "utf8"),
-);
-function saveRSS() {
-  fs.writeFileSync(
-    path.join(__dirname, "../rss.json"),
-    JSON.stringify(rssData, null, 2),
+let rssData = {};
+const rssPath = path.join(__dirname, "../rss.json");
+
+try {
+  rssData = JSON.parse(fs.readFileSync(rssPath, "utf8"));
+} catch (err) {
+  console.log(
+    "⚠️ rss.json does not exist; it will be created on the first registration.",
   );
+}
+
+function saveRSS() {
+  fs.writeFileSync(rssPath, JSON.stringify(rssData, null, 2));
 }
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
