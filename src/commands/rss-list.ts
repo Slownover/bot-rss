@@ -1,13 +1,16 @@
-const { SlashCommandBuilder } = require("discord.js");
+import { SlashCommandBuilder } from "discord.js";
+import type { Command } from "../types.js";
 
-module.exports = {
+const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-list")
     .setDescription("List of registered RSS feeds"),
 
   async execute(interaction, rssData) {
-    if (rssData.feeds.length === 0)
-      return interaction.reply("No streams recorded.");
+    if (rssData.feeds.length === 0) {
+      await interaction.reply("No streams recorded.");
+      return;
+    }
 
     const list = rssData.feeds
       .map((f) => `**\`${f.id}\`**: \`${f.url}\` → <#${f.channel}>`)
@@ -16,3 +19,5 @@ module.exports = {
     await interaction.reply(list);
   },
 };
+
+export = command;

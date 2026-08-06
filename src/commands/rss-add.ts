@@ -1,7 +1,8 @@
-const { SlashCommandBuilder, ChannelType } = require("discord.js");
-const { generateUltimateHash } = require("../utils/function.js");
+import { ChannelType, SlashCommandBuilder } from "discord.js";
+import type { Command } from "../types.js";
+import { generateUltimateHash } from "../utils/function.js";
 
-module.exports = {
+const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-add")
     .setDescription("Add an RSS feed")
@@ -17,8 +18,8 @@ module.exports = {
     ),
 
   async execute(interaction, rssData, saveRSS) {
-    const url = interaction.options.getString("url");
-    const channel = interaction.options.getChannel("channel");
+    const url = interaction.options.getString("url", true);
+    const channel = interaction.options.getChannel("channel", true);
     const id = await generateUltimateHash(8, url, channel.id);
 
     rssData.feeds.push({
@@ -34,3 +35,5 @@ module.exports = {
     );
   },
 };
+
+export = command;

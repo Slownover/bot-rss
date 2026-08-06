@@ -1,9 +1,9 @@
-const sharp = require("sharp");
-const cheerio = require("cheerio");
-const { URL } = require("url");
-const { http } = require("../utils/http.js");
+import sharp from "sharp";
+import * as cheerio from "cheerio";
+import { URL } from "url";
+import { http } from "../utils/http.js";
 
-async function convertIcoToPng(buffer) {
+async function convertIcoToPng(buffer: Buffer): Promise<Buffer | null> {
   try {
     return await sharp(buffer, { failOn: "none" }).png().toBuffer();
   } catch {
@@ -11,10 +11,10 @@ async function convertIcoToPng(buffer) {
   }
 }
 
-async function getSiteIcon(domain) {
+export async function getSiteIcon(domain: string): Promise<Buffer | null> {
   const baseUrl = `https://${domain}`;
 
-  let html;
+  let html: string;
   try {
     const res = await http.get(baseUrl);
     html = res.data;
@@ -34,7 +34,8 @@ async function getSiteIcon(domain) {
 
     try {
       const res = await http.get(iconUrl, { responseType: "arraybuffer" });
-      if (res.headers["content-type"]?.includes("image")) {
+      const contentType = res.headers["content-type"];
+      if (typeof contentType === "string" && contentType.includes("image")) {
         const png = await convertIcoToPng(Buffer.from(res.data));
         if (png) return png;
       }
@@ -44,12 +45,13 @@ async function getSiteIcon(domain) {
   return getFavicon(domain);
 }
 
-async function getFavicon(domain) {
+async function getFavicon(domain: string): Promise<Buffer | null> {
   const url = `https://${domain}/favicon.ico`;
 
   try {
     const res = await http.get(url, { responseType: "arraybuffer" });
-    if (res.headers["content-type"]?.includes("image")) {
+    const contentType = res.headers["content-type"];
+    if (typeof contentType === "string" && contentType.includes("image")) {
       const png = await convertIcoToPng(Buffer.from(res.data));
       if (png) return png;
     }
@@ -57,5 +59,3 @@ async function getFavicon(domain) {
 
   return null;
 }
-
-module.exports = { getSiteIcon };

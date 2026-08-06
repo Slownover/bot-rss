@@ -2,7 +2,7 @@
 
 ## 📘 Project Description
 
-This project is an RSS bot developed in JavaScript that helps users automate their RSS feed management. It allows users to fetch, read, and manage RSS feeds from various sources.
+This project is an RSS bot developed in TypeScript that helps users automate their RSS feed management. It allows users to fetch, read, and manage RSS feeds from various sources.
 
 ## ✨ Features
 
@@ -75,10 +75,17 @@ Make sure to fill in all required credentials before starting the bot.
 
 ## 🚀 Usage
 
-To run the RSS bot, use the following command:
+To run the RSS bot, first compile the TypeScript source, then start it:
 
 ```bash
-node index.js
+npm run build
+npm start
+```
+
+For development with hot-reload:
+
+```bash
+npm run dev
 ```
 
 Make sure to configure your feeds in the config.json file according to your preferences.

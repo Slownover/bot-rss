@@ -2,3 +2,5 @@ config.json
 node_modules/
 rss.json
 .vscode
+dist/
+*.tsbuildinfo

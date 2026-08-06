@@ -1,6 +1,10 @@
-const config = require("./config.json");
+import { config } from "./config.js";
 
-async function translate(text, targetLang = "fr", sourceLang = "auto") {
+export async function translate(
+  text: unknown,
+  targetLang = "fr",
+  sourceLang = "auto",
+): Promise<string> {
   if (typeof text !== "string" || !text.trim()) return "";
 
   const params = {
@@ -14,11 +18,11 @@ async function translate(text, targetLang = "fr", sourceLang = "auto") {
 
   const url =
     "https://translate-pa.googleapis.com/v1/translate?" +
-    new URLSearchParams(params);
+    new URLSearchParams(params).toString();
 
   try {
     const res = await fetch(url);
-    const data = await res.json();
+    const data = (await res.json()) as { translation?: string };
 
     if (data?.translation) {
       return data.translation;
@@ -31,5 +35,3 @@ async function translate(text, targetLang = "fr", sourceLang = "auto") {
     return text;
   }
 }
-
-module.exports = translate;

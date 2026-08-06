@@ -1,9 +1,12 @@
-const { URL } = require("url");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import { URL } from "url";
+import type { RSSData } from "../types.js";
+import { resolveProjectFile } from "./paths.js";
 
-function getDomain(url) {
+export function getDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
   try {
     return new URL(url).hostname;
   } catch {
@@ -11,7 +14,7 @@ function getDomain(url) {
   }
 }
 
-function truncateDiscord(str, limit = 2000) {
+export function truncateDiscord(str: string, limit = 2000): string {
   if (str.length <= limit) return str;
 
   let cut = str.slice(0, limit);
@@ -21,31 +24,29 @@ function truncateDiscord(str, limit = 2000) {
   return cut + "...";
 }
 
-let rssData = {
-  feeds: [],
-};
+const rssPath = resolveProjectFile("rss.json");
 
-const rssPath = path.join(__dirname, "../rss.json");
+export let rssData: RSSData = { feeds: [] };
 
 try {
-  rssData = JSON.parse(fs.readFileSync(rssPath, "utf8"));
-} catch (err) {
+  rssData = JSON.parse(fs.readFileSync(rssPath, "utf8")) as RSSData;
+} catch {
   console.log(
     "⚠️ rss.json does not exist; it will be created on the first registration.",
   );
 }
 
-function saveRSS() {
+export function saveRSS(): void {
   fs.writeFileSync(rssPath, JSON.stringify(rssData, null, 2));
 }
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-function toBase62(buffer) {
+function toBase62(buffer: Buffer): string {
   let num = BigInt("0x" + buffer.toString("hex"));
   let out = "";
   while (num > 0) {
-    out = BASE62[num % 62n] + out;
+    out = BASE62[Number(num % 62n)] + out;
     num /= 62n;
   }
   return out || "0";
@@ -54,7 +55,10 @@ function toBase62(buffer) {
 let lastTimestamp = 0;
 let counter = 0;
 
-async function generateUltimateHash(length, ...extraParams) {
+export async function generateUltimateHash(
+  length: number,
+  ...extraParams: string[]
+): Promise<string> {
   if (!length || length < 4) {
     throw new Error("The length must be >= 4.");
   }
@@ -88,11 +92,3 @@ async function generateUltimateHash(length, ...extraParams) {
 
   return base62.slice(0, length);
 }
-
-module.exports = {
-  getDomain,
-  truncateDiscord,
-  rssData,
-  saveRSS,
-  generateUltimateHash,
-};

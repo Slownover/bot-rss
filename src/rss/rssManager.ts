@@ -1,26 +1,29 @@
-const Parser = require("rss-parser");
-const translate = require("../translate.js");
-const config = require("../config.json");
-const { getSiteIcon } = require("./favicon.js");
-const { client } = require("../core/client.js");
-const {
-  getDomain,
-  truncateDiscord,
-  rssData,
-  saveRSS,
-} = require("../utils/function.js");
-const {
-  Client,
-  GatewayIntentBits,
-  Collection,
+import Parser from "rss-parser";
+import {
   ButtonBuilder,
   ButtonStyle,
-  ContainerBuilder,
   ComponentType,
+  ContainerBuilder,
   MessageFlags,
-} = require("discord.js");
+} from "discord.js";
+import { config } from "../config.js";
+import { translate } from "../translate.js";
+import { client } from "../core/client.js";
+import {
+  getDomain,
+  rssData,
+  saveRSS,
+  truncateDiscord,
+} from "../utils/function.js";
+import { getSiteIcon } from "./favicon.js";
+import type { Feed } from "../types.js";
 
-const parser = new Parser({
+type CustomItem = {
+  mediaContent?: { $: { url?: string } }[];
+  mediaThumbnail?: { $: { url?: string } }[];
+};
+
+const parser = new Parser<Record<string, unknown>, CustomItem>({
   customFields: {
     item: [
       ["media:content", "mediaContent", { keepArray: true }],
@@ -29,8 +32,11 @@ const parser = new Parser({
   },
 });
 
-async function parseFeedWithRetry(url, retries = 3) {
-  let lastErr;
+async function parseFeedWithRetry(
+  url: string,
+  retries = 3,
+): Promise<Parser.Output<CustomItem>> {
+  let lastErr: unknown;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       return await parser.parseURL(url);
@@ -44,25 +50,26 @@ async function parseFeedWithRetry(url, retries = 3) {
   throw lastErr;
 }
 
-async function checkFeed(feed) {
+export async function checkFeed(feed: Feed): Promise<void> {
   try {
     const parsed = await parseFeedWithRetry(feed.url);
     const latest = parsed.items[0];
-    if (!latest) return;
+    const link = latest?.link;
+    if (!link) return;
 
-    if (!feed.last || rssData.feeds.some((f) => f.last === latest.link)) {
-      feed.last = latest.link;
+    if (!feed.last || rssData.feeds.some((f) => f.last === link)) {
+      feed.last = link;
       saveRSS();
       return;
     }
 
-    if (latest.link !== feed.last) {
-      feed.last = latest.link;
+    if (link !== feed.last) {
+      feed.last = link;
       saveRSS();
 
       const titleFR =
         (await translate(latest.title, config.targetLanguage)) ||
-        getDomain(latest.link) ||
+        getDomain(link) ||
         "Sans titre";
       const descFR = truncateDiscord(
         await translate(
@@ -73,43 +80,48 @@ async function checkFeed(feed) {
       );
 
       const channel = client.channels.cache.get(feed.channel);
+      if (!channel?.isSendable()) return;
 
-      // Main image
       let illustration =
         latest?.enclosure?.url ??
         latest.mediaThumbnail?.[0].$.url ??
         latest.mediaContent?.[0].$.url;
-      let attachmentFile = null;
+      let attachmentFile: { attachment: Buffer; name: string } | null = null;
 
-      // No image → favicon
       if (!illustration) {
-        const domain = getDomain(latest.link);
-        const faviconBuffer = await getSiteIcon(domain);
+        const domain = getDomain(link);
+        if (domain) {
+          const faviconBuffer = await getSiteIcon(domain);
 
-        if (faviconBuffer) {
-          attachmentFile = {
-            attachment: faviconBuffer,
-            name: "favicon.png",
-          };
+          if (faviconBuffer) {
+            attachmentFile = {
+              attachment: faviconBuffer,
+              name: "favicon.png",
+            };
 
-          illustration = "attachment://favicon.png";
+            illustration = "attachment://favicon.png";
+          }
         }
       }
 
-      // Last Fallback
       if (!illustration) {
         illustration =
           "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128";
       }
 
-      const messagePayload = {
+      const messagePayload: {
+        components: ContainerBuilder[];
+        files?: { attachment: Buffer; name: string }[];
+        flags: number;
+      } = {
         components: [
           new ContainerBuilder()
             .addSectionComponents({
+              type: ComponentType.Section,
               components: [
                 {
                   type: ComponentType.TextDisplay,
-                  content: `## [${titleFR}](${latest.link})\n**${latest.creator ?? getDomain(latest.link)}**`,
+                  content: `## [${titleFR}](${link})\n**${latest.creator ?? getDomain(link)}**`,
                 },
               ],
               accessory: {
@@ -128,29 +140,26 @@ async function checkFeed(feed) {
                 new ButtonBuilder()
                   .setStyle(ButtonStyle.Link)
                   .setLabel("Voir")
-                  .setURL(latest.link),
+                  .setURL(link),
               ),
             ),
         ],
         flags: MessageFlags.IsComponentsV2,
       };
 
-      // Add file if favicon is used
       if (attachmentFile) {
         messagePayload.files = [attachmentFile];
       }
 
-      if (channel) channel.send(messagePayload);
+      await channel.send(messagePayload);
     }
   } catch (err) {
     console.error(`Erreur RSS (${feed.url}) :`, err);
   }
 }
 
-async function checkAllFeeds() {
+export async function checkAllFeeds(): Promise<void> {
   for (const feed of rssData.feeds) {
     await checkFeed(feed);
   }
 }
-
-module.exports = { checkFeed, checkAllFeeds };
