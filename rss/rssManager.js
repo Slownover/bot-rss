@@ -29,9 +29,24 @@ const parser = new Parser({
   },
 });
 
+async function parseFeedWithRetry(url, retries = 3) {
+  let lastErr;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await parser.parseURL(url);
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries - 1) {
+        await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 async function checkFeed(feed) {
   try {
-    const parsed = await parser.parseURL(feed.url);
+    const parsed = await parseFeedWithRetry(feed.url);
     const latest = parsed.items[0];
     if (!latest) return;
 
@@ -45,10 +60,13 @@ async function checkFeed(feed) {
       feed.last = latest.link;
       saveRSS();
 
-      const titleFR = await translate(latest.title, config.targetLanguage);
+      const titleFR =
+        (await translate(latest.title, config.targetLanguage)) ||
+        getDomain(latest.link) ||
+        "Sans titre";
       const descFR = truncateDiscord(
         await translate(
-          latest.contentSnippet || latest.content || "",
+          latest.contentSnippet || latest.content,
           config.targetLanguage,
         ),
         1950,
@@ -102,7 +120,7 @@ async function checkFeed(feed) {
             })
             .addSeparatorComponents((s) => s)
             .addTextDisplayComponents((t) =>
-              t.setContent(descFR ?? "Aucune description disponible"),
+              t.setContent(descFR || "Aucune description disponible"),
             )
             .addSeparatorComponents((s) => s)
             .addActionRowComponents((row) =>

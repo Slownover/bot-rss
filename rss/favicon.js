@@ -4,7 +4,11 @@ const { URL } = require("url");
 const { http } = require("../utils/http.js");
 
 async function convertIcoToPng(buffer) {
-  return sharp(buffer).png().toBuffer();
+  try {
+    return await sharp(buffer, { failOn: "none" }).png().toBuffer();
+  } catch {
+    return null;
+  }
 }
 
 async function getSiteIcon(domain) {
@@ -26,11 +30,13 @@ async function getSiteIcon(domain) {
     if (!href) continue;
 
     const iconUrl = new URL(href, baseUrl).href;
+    if (/\.ico($|\?)/i.test(iconUrl)) continue;
 
     try {
       const res = await http.get(iconUrl, { responseType: "arraybuffer" });
       if (res.headers["content-type"]?.includes("image")) {
-        return convertIcoToPng(Buffer.from(res.data));
+        const png = await convertIcoToPng(Buffer.from(res.data));
+        if (png) return png;
       }
     } catch {}
   }
@@ -44,7 +50,8 @@ async function getFavicon(domain) {
   try {
     const res = await http.get(url, { responseType: "arraybuffer" });
     if (res.headers["content-type"]?.includes("image")) {
-      return convertIcoToPng(Buffer.from(res.data));
+      const png = await convertIcoToPng(Buffer.from(res.data));
+      if (png) return png;
     }
   } catch {}
 

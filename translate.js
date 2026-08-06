@@ -1,6 +1,8 @@
 const config = require("./config.json");
 
 async function translate(text, targetLang = "fr", sourceLang = "auto") {
+  if (typeof text !== "string" || !text.trim()) return "";
+
   const params = {
     "params.client": "gtx",
     dataTypes: "TRANSLATION",
