@@ -110,6 +110,10 @@ const fr = {
     "rss.json n'existe pas ; il sera créé à la première inscription.",
   "log.clientReady": "Connecté en tant que {username}",
   "log.commandsRegistered": "{count} commande(s) enregistrée(s)",
+  "log.applicationInfo": "Application connectée (ID {id})",
+  "log.globalCommandsCleared":
+    "{count} commande(s) globale(s) périmée(s) supprimée(s)",
+  "log.commandsSynced": "Commandes de la guild après synchronisation : {names}",
   "log.commandError": "Erreur lors de l'exécution de la commande {name}",
   "log.commandsRegisterError": "Erreur lors de l'enregistrement des commandes",
   "log.rssError": "Erreur RSS ({url})",
@@ -244,6 +248,10 @@ const en: { [K in keyof typeof fr]: string } = {
     "rss.json does not exist; it will be created on the first registration.",
   "log.clientReady": "Connected as {username}",
   "log.commandsRegistered": "{count} command(s) registered",
+  "log.applicationInfo": "Application connected (ID {id})",
+  "log.globalCommandsCleared":
+    "Cleared {count} stale global command(s)",
+  "log.commandsSynced": "Guild commands after sync: {names}",
   "log.commandError": "Error while executing command {name}",
   "log.commandsRegisterError": "Error while registering commands",
   "log.rssError": "RSS error ({url})",

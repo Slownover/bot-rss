@@ -48,11 +48,27 @@ client.once(Events.ClientReady, async () => {
   console.log(
     t("log.clientReady", { username: client.user?.username ?? "unknown" }),
   );
+  logger.info(
+    t("log.applicationInfo", { id: client.application?.id ?? "unknown" }),
+  );
   try {
+    const application = client.application;
+    const globalCmds = await application?.commands.fetch();
+    if (application && globalCmds && globalCmds.size > 0) {
+      await application.commands.set([]);
+      logger.warn(t("log.globalCommandsCleared", { count: globalCmds.size }));
+    }
+
     const guild = await client.guilds.fetch(config.guildId);
     await guild.commands.set(commandsJSON);
     logger.info(t("log.commandsRegistered", { count: commandsJSON.length }));
-    console.log(t("log.commandsRegistered", { count: commandsJSON.length }));
+
+    const synced = await guild.commands.fetch();
+    logger.info(
+      t("log.commandsSynced", {
+        names: synced.map((c) => `/${c.name}`).join(", ") || "∅",
+      }),
+    );
   } catch (err) {
     logger.error({ err }, t("log.commandsRegisterError"));
   }
