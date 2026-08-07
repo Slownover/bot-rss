@@ -50,6 +50,20 @@ function loadConfig(): Config {
   if (obj.lang !== undefined && obj.lang !== "fr" && obj.lang !== "en") {
     errors.push("lang (fr | en)");
   }
+  if (
+    obj.adminChannelId !== undefined &&
+    (typeof obj.adminChannelId !== "string" || !obj.adminChannelId.trim())
+  ) {
+    errors.push("adminChannelId (id de salon)");
+  }
+  if (
+    obj.maxFeedFailures !== undefined &&
+    (typeof obj.maxFeedFailures !== "number" ||
+      !Number.isInteger(obj.maxFeedFailures) ||
+      obj.maxFeedFailures < 1)
+  ) {
+    errors.push("maxFeedFailures (entier >= 1)");
+  }
 
   if (errors.length > 0) {
     const message = errors.join(", ");
@@ -64,6 +78,10 @@ function loadConfig(): Config {
     rssFetchCron: (obj.rssFetchCron as string | undefined) ?? "*/2 * * * *",
     targetLanguage: (obj.targetLanguage as string | undefined) ?? "en",
     lang: obj.lang === "en" ? "en" : "fr",
+    adminChannelId:
+      (obj.adminChannelId as string | undefined)?.trim() || undefined,
+    maxFeedFailures:
+      typeof obj.maxFeedFailures === "number" ? obj.maxFeedFailures : undefined,
   };
 }
 

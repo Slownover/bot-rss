@@ -13,10 +13,25 @@ export interface Feed {
   id: string;
   sensitive?: boolean;
   translate?: boolean;
+  enabled?: boolean;
+  intervalMinutes?: number;
+  roleId?: string;
+  webhookUrl?: string;
+  whitelist?: string[];
+  blacklist?: string[];
+  errorCount?: number;
+  lastCheckedAt?: number;
+}
+
+export interface RSSStats {
+  postedCount: number;
+  lastPostAt: string | null;
 }
 
 export interface RSSData {
   feeds: Feed[];
+  sent: string[];
+  stats: RSSStats;
 }
 
 export interface Config {
@@ -26,6 +41,8 @@ export interface Config {
   rssFetchCron: string;
   targetLanguage: string;
   lang: "fr" | "en";
+  adminChannelId?: string;
+  maxFeedFailures?: number;
 }
 
 export interface Command {

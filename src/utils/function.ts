@@ -28,10 +28,15 @@ export function truncateDiscord(str: string, limit = 2000): string {
 
 const rssPath = resolveProjectFile("rss.json");
 
-export let rssData: RSSData = { feeds: [] };
+export let rssData: RSSData = { feeds: [], sent: [], stats: { postedCount: 0, lastPostAt: null } };
 
 try {
-  rssData = JSON.parse(fs.readFileSync(rssPath, "utf8")) as RSSData;
+  const raw = JSON.parse(fs.readFileSync(rssPath, "utf8")) as Partial<RSSData>;
+  rssData = {
+    feeds: Array.isArray(raw.feeds) ? raw.feeds : [],
+    sent: Array.isArray(raw.sent) ? raw.sent : [],
+    stats: raw.stats ?? { postedCount: 0, lastPostAt: null },
+  };
 } catch {
   logger.warn(t("log.rssDataMissing"));
 }
