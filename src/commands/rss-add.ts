@@ -1,4 +1,9 @@
-import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+  ChannelType,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  MessageFlags,
+} from "discord.js";
 import type { Command } from "../types.js";
 import { generateUltimateHash } from "../utils/function.js";
 
@@ -16,11 +21,20 @@ const command: Command = {
         .setDescription("Trade show where to send items")
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true),
+    )
+    .addBooleanOption((opt) =>
+      opt
+        .setName("sensitive")
+        .setDescription(
+          "URL contains sensitive data (tokens). Masked in /rss-list",
+        )
+        .setRequired(false),
     ),
 
   async execute(interaction, rssData, saveRSS) {
     const url = interaction.options.getString("url", true);
     const channel = interaction.options.getChannel("channel", true);
+    const sensitive = interaction.options.getBoolean("sensitive") ?? false;
     const id = await generateUltimateHash(8, url, channel.id);
 
     rssData.feeds.push({
@@ -28,12 +42,14 @@ const command: Command = {
       channel: channel.id,
       last: null,
       id,
+      sensitive,
     });
 
     saveRSS();
-    await interaction.reply(
-      `✔ Added feed : \`${url}\` → <#${channel.id}> (\`${id}\`)`,
-    );
+    await interaction.reply({
+      content: `✔ Added feed : \`${url}\` → <#${channel.id}> (\`${id}\`)`,
+      flags: sensitive ? MessageFlags.Ephemeral : undefined,
+    });
   },
 };
 

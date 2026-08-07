@@ -11,6 +11,7 @@ export interface Feed {
   channel: string;
   last: string | null;
   id: string;
+  sensitive?: boolean;
 }
 
 export interface RSSData {

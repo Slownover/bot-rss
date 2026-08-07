@@ -1,4 +1,8 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from "discord.js";
 import type { Command } from "../types.js";
 
 const command: Command = {
@@ -27,7 +31,10 @@ const command: Command = {
 
     saveRSS();
 
-    await interaction.reply(`🗑️ Feed deleted : \`${removed.url}\``);
+    await interaction.reply({
+      content: `🗑️ Feed deleted : \`${removed.url}\``,
+      flags: removed.sensitive ? MessageFlags.Ephemeral : undefined,
+    });
   },
 };
 
