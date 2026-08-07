@@ -1,10 +1,11 @@
-import { SlashCommandBuilder } from "discord.js";
+import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
 
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-remove")
     .setDescription("Delete an RSS feed")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addStringOption((opt) =>
       opt
         .setName("id")

@@ -1,4 +1,4 @@
-import { ChannelType, SlashCommandBuilder } from "discord.js";
+import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
 import { generateUltimateHash } from "../utils/function.js";
 
@@ -6,6 +6,7 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-add")
     .setDescription("Add an RSS feed")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addStringOption((opt) =>
       opt.setName("url").setDescription("RSS feed URL").setRequired(true),
     )
