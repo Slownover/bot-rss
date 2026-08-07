@@ -67,15 +67,21 @@ export async function checkFeed(feed: Feed): Promise<void> {
       feed.last = link;
       saveRSS();
 
-      const titleFR =
-        (await translate(latest.title, config.targetLanguage)) ||
-        getDomain(link) ||
-        "Sans titre";
+      const shouldTranslate = feed.translate !== false;
+
+      const titleFR = shouldTranslate
+        ? (await translate(latest.title, config.targetLanguage)) ||
+          getDomain(link) ||
+          "Sans titre"
+        : latest.title || getDomain(link) || "Sans titre";
+
       const descFR = truncateDiscord(
-        await translate(
-          latest.contentSnippet || latest.content,
-          config.targetLanguage,
-        ),
+        shouldTranslate
+          ? await translate(
+              latest.contentSnippet || latest.content,
+              config.targetLanguage,
+            )
+          : (latest.contentSnippet || latest.content) ?? "",
         1950,
       );
 

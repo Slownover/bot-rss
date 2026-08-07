@@ -29,12 +29,19 @@ const command: Command = {
           "URL contains sensitive data (tokens). Masked in /rss-list",
         )
         .setRequired(false),
+    )
+    .addBooleanOption((opt) =>
+      opt
+        .setName("translate")
+        .setDescription("Translate feed content (default: false)")
+        .setRequired(false),
     ),
 
   async execute(interaction, rssData, saveRSS) {
     const url = interaction.options.getString("url", true);
     const channel = interaction.options.getChannel("channel", true);
     const sensitive = interaction.options.getBoolean("sensitive") ?? false;
+    const translate = interaction.options.getBoolean("translate") ?? false;
     const id = await generateUltimateHash(8, url, channel.id);
 
     rssData.feeds.push({
@@ -43,6 +50,7 @@ const command: Command = {
       last: null,
       id,
       sensitive,
+      translate,
     });
 
     saveRSS();

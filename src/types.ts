@@ -12,6 +12,7 @@ export interface Feed {
   last: string | null;
   id: string;
   sensitive?: boolean;
+  translate?: boolean;
 }
 
 export interface RSSData {
