@@ -45,6 +45,7 @@ const fr = {
   "cmd.list.customInterval": "🕒 {min} min",
   "cmd.list.filtered": "🔍 filtré",
   "cmd.list.translated": "🌐",
+  "cmd.list.role": "👥 @{role}",
 
   "cmd.edit.description": "Modifier un flux RSS",
   "cmd.edit.id": "ID du flux (voir /rss-list)",
@@ -178,6 +179,7 @@ const en: { [K in keyof typeof fr]: string } = {
   "cmd.list.customInterval": "🕒 {min} min",
   "cmd.list.filtered": "🔍 filtered",
   "cmd.list.translated": "🌐",
+  "cmd.list.role": "👥 @{role}",
 
   "cmd.edit.description": "Edit an RSS feed",
   "cmd.edit.id": "Feed ID (see /rss-list)",

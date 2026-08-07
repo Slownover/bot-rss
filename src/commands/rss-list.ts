@@ -6,7 +6,7 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
-import type { Command } from "../types.js";
+import type { Command, Feed } from "../types.js";
 import { getDomain } from "../utils/function.js";
 import { t } from "../i18n.js";
 
@@ -47,7 +47,6 @@ const command: Command = {
 
     const showFull = interaction.options.getBoolean("full") ?? false;
 
-    let entries: string[];
     let title: string;
     let ephemeral = false;
 
@@ -64,21 +63,39 @@ const command: Command = {
         return;
       }
 
-      entries = rssData.feeds.map(
-        (f) => `**\`${f.id}\`**: \`${f.url}\` → <#${f.channel}>`,
-      );
       title = t("cmd.list.fullTitle");
       ephemeral = true;
     } else {
-      entries = rssData.feeds.map((f) => {
-        const url = f.sensitive
-          ? `\`${getDomain(f.url) ?? "unknown"}/...\``
-          : `\`${f.url}\``;
-        return `**\`${f.id}\`**: ${url} → <#${f.channel}>`;
-      });
       title = "";
       ephemeral = false;
     }
+
+    const buildEntry = (f: Feed): string => {
+      const url = showFull
+        ? `\`${f.url}\``
+        : f.sensitive
+          ? `\`${getDomain(f.url) ?? "unknown"}/...\``
+          : `\`${f.url}\``;
+
+      const badges: string[] = [];
+      if (f.enabled === false) badges.push(t("cmd.list.paused"));
+      if (f.intervalMinutes) {
+        badges.push(t("cmd.list.customInterval", { min: f.intervalMinutes }));
+      }
+      if (f.roleId) {
+        const role = interaction.guild?.roles.cache.get(f.roleId);
+        badges.push(t("cmd.list.role", { role: role?.name ?? f.roleId }));
+      }
+      if (f.whitelist?.length || f.blacklist?.length) {
+        badges.push(t("cmd.list.filtered"));
+      }
+      if (f.translate) badges.push(t("cmd.list.translated"));
+
+      const suffix = badges.length ? ` — ${badges.join(" ")}` : "";
+      return `**\`${f.id}\`**: ${url} → <#${f.channel}>${suffix}`;
+    };
+
+    const entries = rssData.feeds.map(buildEntry);
 
     const pages: string[] = [];
     for (let i = 0; i < entries.length; i += PAGE_SIZE) {
