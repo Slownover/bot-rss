@@ -4,5 +4,7 @@
   "googleApiKey": "",
   "rssFetchCron": "*/2 * * * *",
   "targetLanguage": "en",
-  "lang": "en"
+  "lang": "fr",
+  "adminChannelId": "",
+  "maxFeedFailures": 5
 }
