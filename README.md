@@ -93,6 +93,15 @@ npm run dev
 
 Log level can be set via the `LOG_LEVEL` environment variable (`trace`, `debug`, `info`, `warn`, `error`, default `info`).
 
+Logs are written as JSON lines to the console, and additionally to daily-rotating files in `logs/` (gitignored) that keep the last 3 days:
+
+| Env var             | Default  | Description                                                            |
+| ------------------- | -------- | ---------------------------------------------------------------------- |
+| `LOG_LEVEL`         | `info`   | Minimum level logged to all destinations.                              |
+| `LOG_PRETTY`        | `false`  | `true` forces human-readable colored output in the console (auto-enabled on a TTY). |
+| `LOG_DIR`           | `logs/`  | Directory where rotating log files are written.                        |
+| `LOG_RETENTION_DAYS`| `3`      | Number of daily log files to keep.                                     |
+
 ## 📚 Commands
 
 | Command        | Description                                                                                                                          | Permissions      |

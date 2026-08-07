@@ -4,3 +4,5 @@ rss.json
 .vscode
 dist/
 *.tsbuildinfo
+logs/
+.env*

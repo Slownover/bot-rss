@@ -1,8 +1,5 @@
 import { client } from "./core/client.js";
-import {
-  startRssScheduler,
-  stopRssScheduler,
-} from "./core/rssScheduler.js";
+import { startRssScheduler, stopRssScheduler } from "./core/rssScheduler.js";
 import { config } from "./config.js";
 import { logger } from "./utils/logger.js";
 import { t } from "./i18n.js";
@@ -11,6 +8,7 @@ function shutdown(signal: NodeJS.Signals): void {
   logger.info(t("log.shutdown", { signal }));
   stopRssScheduler();
   client.destroy();
+  logger.flush();
   process.exit(0);
 }
 

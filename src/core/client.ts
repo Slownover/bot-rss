@@ -1,11 +1,6 @@
 import fs from "fs";
 import path from "path";
-import {
-  Client,
-  Collection,
-  Events,
-  GatewayIntentBits,
-} from "discord.js";
+import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
 import type { Command, RSSBotClient } from "../types.js";
 import { config } from "../config.js";
 import { rssData, saveRSS } from "../utils/function.js";
@@ -47,11 +42,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.once(Events.ClientReady, async () => {
-  logger.info(t("log.clientReady", { username: client.user?.username ?? "unknown" }));
+  logger.info(
+    t("log.clientReady", { username: client.user?.username ?? "unknown" }),
+  );
+  console.log(
+    t("log.clientReady", { username: client.user?.username ?? "unknown" }),
+  );
   try {
     const guild = await client.guilds.fetch(config.guildId);
     await guild.commands.set(commandsJSON);
     logger.info(t("log.commandsRegistered", { count: commandsJSON.length }));
+    console.log(t("log.commandsRegistered", { count: commandsJSON.length }));
   } catch (err) {
     logger.error({ err }, t("log.commandsRegisterError"));
   }
