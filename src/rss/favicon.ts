@@ -3,6 +3,28 @@ import * as cheerio from "cheerio";
 import { URL } from "url";
 import { http } from "../utils/http.js";
 
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const NEGATIVE_TTL_MS = 10 * 60 * 1000;
+const MAX_CACHE_SIZE = 200;
+
+const cache = new Map<string, { buffer: Buffer | null; expires: number }>();
+
+function prune(): void {
+  if (cache.size <= MAX_CACHE_SIZE) return;
+  const now = Date.now();
+  for (const [key, entry] of cache) {
+    if (entry.expires <= now) cache.delete(key);
+  }
+  if (cache.size > MAX_CACHE_SIZE) {
+    const sorted = [...cache.entries()].sort(
+      (a, b) => a[1].expires - b[1].expires,
+    );
+    for (const [key] of sorted.slice(0, cache.size - MAX_CACHE_SIZE)) {
+      cache.delete(key);
+    }
+  }
+}
+
 async function convertIcoToPng(buffer: Buffer): Promise<Buffer | null> {
   try {
     return await sharp(buffer, { failOn: "none" }).png().toBuffer();
@@ -11,7 +33,7 @@ async function convertIcoToPng(buffer: Buffer): Promise<Buffer | null> {
   }
 }
 
-export async function getSiteIcon(domain: string): Promise<Buffer | null> {
+async function fetchSiteIcon(domain: string): Promise<Buffer | null> {
   const baseUrl = `https://${domain}`;
 
   let html: string;
@@ -58,4 +80,18 @@ async function getFavicon(domain: string): Promise<Buffer | null> {
   } catch {}
 
   return null;
+}
+
+export async function getSiteIcon(domain: string): Promise<Buffer | null> {
+  const now = Date.now();
+  const hit = cache.get(domain);
+  if (hit && hit.expires > now) return hit.buffer;
+
+  const buffer = await fetchSiteIcon(domain);
+  cache.set(domain, {
+    buffer,
+    expires: now + (buffer ? CACHE_TTL_MS : NEGATIVE_TTL_MS),
+  });
+  prune();
+  return buffer;
 }
