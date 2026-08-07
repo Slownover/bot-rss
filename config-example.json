@@ -3,5 +3,6 @@
   "guildId": "",
   "googleApiKey": "",
   "rssFetchCron": "*/2 * * * *",
-  "targetLanguage": "en"
+  "targetLanguage": "en",
+  "lang": "en"
 }

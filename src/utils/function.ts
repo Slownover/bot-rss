@@ -4,6 +4,8 @@ import path from "path";
 import { URL } from "url";
 import type { RSSData } from "../types.js";
 import { resolveProjectFile } from "./paths.js";
+import { logger } from "./logger.js";
+import { t } from "../i18n.js";
 
 export function getDomain(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -31,13 +33,18 @@ export let rssData: RSSData = { feeds: [] };
 try {
   rssData = JSON.parse(fs.readFileSync(rssPath, "utf8")) as RSSData;
 } catch {
-  console.log(
-    "⚠️ rss.json does not exist; it will be created on the first registration.",
-  );
+  logger.warn(t("log.rssDataMissing"));
 }
 
 export function saveRSS(): void {
-  fs.writeFileSync(rssPath, JSON.stringify(rssData, null, 2));
+  const tmpPath = `${rssPath}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(rssData, null, 2));
+    fs.renameSync(tmpPath, rssPath);
+  } catch (err) {
+    logger.error({ err }, t("log.rssSaveError"));
+    throw err;
+  }
 }
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

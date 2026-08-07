@@ -1,20 +1,20 @@
 # 📰 RSS Bot 🤖
 
-## 📘 Project Description
-
-This project is an RSS bot developed in TypeScript that helps users automate their RSS feed management. It allows users to fetch, read, and manage RSS feeds from various sources.
+A Discord bot in TypeScript that monitors RSS feeds and posts new articles to a channel, with optional automatic translation.
 
 ## ✨ Features
 
-- 🔄 Fetch RSS feeds from multiple sources
-- 📚 Manage and organize your favorite feeds
-- 🔔 Customizable alerts for new content
-- 🧩 User-friendly API
-- 🟩 Built with Node.js and npm
+- 🔄 Fetches RSS/Atom feeds from multiple sources (with retry + backoff)
+- 📚 Manages feeds with slash commands (`/rss-add`, `/rss-remove`, `/rss-edit`, `/rss-list`)
+- 🔔 Sends new articles as Discord Components v2 cards with thumbnail/favicon
+- 🌐 Optional content translation (Google translate API)
+- 🔒 `sensitive` flag to mask feed URLs in `/rss-list`
+- ⚡ Parallel feed checking with bounded concurrency
+- 📄 Paginated feed list when there are many feeds
+- 🌍 i18n (French / English) for bot messages
+- 🧹 Structured logs (pino), atomic JSON persistence, graceful shutdown
 
 ## 📦 Installation
-
-To get started, clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/Slownover/bot-rss.git
@@ -22,84 +22,77 @@ cd bot-rss
 npm install
 ```
 
+Requires Node.js >= 22.19.
+
 ## ⚙️ Configuration
 
-Before running the bot, you need to create the required configuration files.
+### 1. Create `config.json`
 
-### 📁 1. Create `config.json`
-
-The project includes a `config-example.json` file, which serves as a template.  
-Copy it and rename it to `config.json`:
+Copy `config-example.json` and rename it to `config.json`:
 
 ```bash
 cp config-example.json config.json
 ```
 
-Then fill in the required fields according to your setup.
+| Field            | Required | Default         | Description                                       |
+| ---------------- | -------- | --------------- | ------------------------------------------------- |
+| `token`          | ✅       | —               | Discord bot token.                                |
+| `guildId`        | ✅       | —               | ID of the guild where the bot registers commands. |
+| `googleApiKey`   | —        | `""`            | Key used by the translate API.                    |
+| `rssFetchCron`   | —        | `"*/2 * * * *"` | Cron expression for the RSS polling frequency.    |
+| `targetLanguage` | —        | `"en"`          | Language code used to translate feed content.     |
+| `lang`           | —        | `"fr"`          | Bot UI language: `"fr"` or `"en"`.                |
 
-### 📁 2. Create `rss.json`
+### 2. Create `rss.json`
 
-RSS feed settings are stored separately.  
-A template file named `rss-example.json` is provided.  
-Copy it and rename it to `rss.json`:
+Feed settings are stored in `rss.json` (gitignored). A template is provided:
 
 ```bash
 cp rss-example.json rss.json
 ```
 
-You can then add your RSS feeds inside this file.
-
-### 🔧 Available Settings (`config.json`)
-
-- **token** — Your bot token (required to authenticate with Discord).
-- **guildId** — The ID of the guild/server where the bot will operate.
-- **googleApiKey** — API key used for Google-related features.
-- **rssFetchCron** — Cron expression defining the execution frequency of RSS feed retrieval.  
-  Default: `*/2 * * * *` (2 minutes)
-- **targetLanguage** — Language code used for translations or processing.  
-  Default: `"en"`
-
-### 📝 Example `config.json`
-
-```json
-{
-  "token": "",
-  "guildId": "",
-  "googleApiKey": "",
-  "rssFetchCron": "*/2 * * * *",
-  "targetLanguage": "en"
-}
-```
-
-Make sure to fill in all required credentials before starting the bot.
+This file is managed automatically by the bot and created on the first feed registration.
 
 ## 🚀 Usage
 
-To run the RSS bot, first compile the TypeScript source, then start it:
-
 ```bash
-npm run build
-npm start
+npm run build && npm start
 ```
 
-For development with hot-reload:
+Development with hot-reload:
 
 ```bash
 npm run dev
 ```
 
-Make sure to configure your feeds in the config.json file according to your preferences.
+Log level can be set via the `LOG_LEVEL` environment variable (`trace`, `debug`, `info`, `warn`, `error`, default `info`).
 
-## 🤝 Contribution Guidelines
+## 📚 Commands
 
-Contributions are welcome! Please follow these steps:
+| Command       | Description                                                                        | Permissions      |
+| ------------- | ---------------------------------------------------------------------------------- | ---------------- |
+| `/rss-add`    | Add an RSS feed to a channel (`url`, `channel`, optional `sensitive`/`translate`). | `ManageMessages` |
+| `/rss-remove` | Delete a feed by its ID (`id`).                                                    | `ManageMessages` |
+| `/rss-edit`   | Enable/disable translation of a feed (`id`, `translate`).                          | `ManageMessages` |
+| `/rss-list`   | List feeds (`full` requires `ManageMessages` to show unmasked URLs).               | anyone           |
+
+Feed IDs are generated automatically and shown by `/rss-add` and `/rss-list`.
+
+## 🔧 Troubleshooting
+
+- **`config.json invalide : ...`** — a required field is missing or malformed. Fix the listed field(s) and restart.
+- **`Impossible de lire config.json ...`** — the file is missing or is not valid JSON. Copy `config-example.json`.
+- **Commands not appearing on Discord** — check `guildId` and that the bot has the right intents/permissions; restart to re-register.
+- **A feed never posts** — check the logs (`ERROR RSS error (url)`); the URL may be unreachable or the feed malformed.
+
+## 🤝 Contribution
 
 1. 🍴 Fork the repository.
-2. 🌿 Create a new branch (`git checkout -b feature-branch`).
-3. 🛠️ Make your changes and commit them (`git commit -m 'Add some feature'`).
-4. 📤 Push to the branch (`git push origin feature-branch`).
+2. 🌿 Create a branch (`git checkout -b feature-branch`).
+3. 🛠️ Make changes and commit (`git commit -m 'Add some feature'`).
+4. 📤 Push (`git push origin feature-branch`).
 5. 🔁 Open a pull request.
 
 ## 📄 License
 
-This project is licensed under the MIT License, see the [LICENSE](./LICENSE) file for details.
+MIT — see the [LICENSE](./LICENSE) file.

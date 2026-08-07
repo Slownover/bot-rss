@@ -25,6 +25,7 @@ export interface Config {
   googleApiKey: string;
   rssFetchCron: string;
   targetLanguage: string;
+  lang: "fr" | "en";
 }
 
 export interface Command {

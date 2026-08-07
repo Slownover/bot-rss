@@ -1,4 +1,6 @@
 import { config } from "./config.js";
+import { logger } from "./utils/logger.js";
+import { t } from "./i18n.js";
 
 export async function translate(
   text: unknown,
@@ -28,10 +30,10 @@ export async function translate(
       return data.translation;
     }
 
-    console.error("Error Google API :", data);
+    logger.error({ data }, t("log.translateApiError"));
     return text;
   } catch (err) {
-    console.error("Error translation :", err);
+    logger.error({ err }, t("log.translationError"));
     return text;
   }
 }

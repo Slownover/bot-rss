@@ -9,6 +9,8 @@ import {
 import type { Command, RSSBotClient } from "../types.js";
 import { config } from "../config.js";
 import { rssData, saveRSS } from "../utils/function.js";
+import { logger } from "../utils/logger.js";
+import { t } from "../i18n.js";
 
 const commandsDir = path.join(__dirname, "..", "commands");
 
@@ -37,17 +39,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await cmd.execute(interaction, rssData, saveRSS);
   } catch (err) {
-    console.error("An error occurred while executing the command: ", err);
+    logger.error(
+      { err },
+      t("log.commandError", { name: interaction.commandName }),
+    );
   }
 });
 
 client.once(Events.ClientReady, async () => {
-  console.log(`Connected as ${client.user?.username ?? "unknown"}`);
+  logger.info(t("log.clientReady", { username: client.user?.username ?? "unknown" }));
   try {
     const guild = await client.guilds.fetch(config.guildId);
     await guild.commands.set(commandsJSON);
-    console.log(`✅ ${commandsJSON.length} registered commands`);
+    logger.info(t("log.commandsRegistered", { count: commandsJSON.length }));
   } catch (err) {
-    console.error("An error occurred while registering the commands: ", err);
+    logger.error({ err }, t("log.commandsRegisterError"));
   }
 });

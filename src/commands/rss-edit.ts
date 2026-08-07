@@ -1,21 +1,22 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
+import { t } from "../i18n.js";
 
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-edit")
-    .setDescription("Edit an RSS feed")
+    .setDescription(t("cmd.edit.description"))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addStringOption((opt) =>
       opt
         .setName("id")
-        .setDescription("Feed ID (see /rss-list)")
+        .setDescription(t("cmd.edit.id"))
         .setRequired(true),
     )
     .addBooleanOption((opt) =>
       opt
         .setName("translate")
-        .setDescription("Whether the feed content should be translated")
+        .setDescription(t("cmd.edit.translate"))
         .setRequired(true),
     ),
 
@@ -26,7 +27,7 @@ const command: Command = {
     const feed = rssData.feeds.find((f) => f.id === id);
 
     if (!feed) {
-      await interaction.reply("❌ Invalid ID.");
+      await interaction.reply(t("cmd.edit.invalid"));
       return;
     }
 
@@ -34,7 +35,10 @@ const command: Command = {
     saveRSS();
 
     await interaction.reply(
-      `✔ Translation ${translate ? "enabled" : "disabled"} for \`${id}\``,
+      t("cmd.edit.success", {
+        id,
+        state: translate ? t("cmd.edit.enabled") : t("cmd.edit.disabled"),
+      }),
     );
   },
 };

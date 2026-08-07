@@ -4,16 +4,17 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import type { Command } from "../types.js";
+import { t } from "../i18n.js";
 
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-remove")
-    .setDescription("Delete an RSS feed")
+    .setDescription(t("cmd.remove.description"))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addStringOption((opt) =>
       opt
         .setName("id")
-        .setDescription("Feed ID (see /rss-list)")
+        .setDescription(t("cmd.remove.id"))
         .setRequired(true),
     ),
 
@@ -23,7 +24,7 @@ const command: Command = {
     const index = rssData.feeds.findIndex((f) => f.id === id);
 
     if (index === -1) {
-      await interaction.reply("❌ Invalid ID.");
+      await interaction.reply(t("cmd.remove.invalid"));
       return;
     }
 
@@ -32,7 +33,7 @@ const command: Command = {
     saveRSS();
 
     await interaction.reply({
-      content: `🗑️ Feed deleted : \`${removed.url}\``,
+      content: t("cmd.remove.success", { url: removed.url }),
       flags: removed.sensitive ? MessageFlags.Ephemeral : undefined,
     });
   },

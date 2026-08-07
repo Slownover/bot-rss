@@ -15,6 +15,9 @@ import {
   saveRSS,
   truncateDiscord,
 } from "../utils/function.js";
+import { mapLimit } from "../utils/concurrency.js";
+import { logger } from "../utils/logger.js";
+import { t } from "../i18n.js";
 import { getSiteIcon } from "./favicon.js";
 import type { Feed } from "../types.js";
 
@@ -69,13 +72,13 @@ export async function checkFeed(feed: Feed): Promise<void> {
 
       const shouldTranslate = feed.translate !== false;
 
-      const titleFR = shouldTranslate
+      const title = shouldTranslate
         ? (await translate(latest.title, config.targetLanguage)) ||
           getDomain(link) ||
-          "Sans titre"
-        : latest.title || getDomain(link) || "Sans titre";
+          t("rss.noTitle")
+        : latest.title || getDomain(link) || t("rss.noTitle");
 
-      const descFR = truncateDiscord(
+      const description = truncateDiscord(
         shouldTranslate
           ? await translate(
               latest.contentSnippet || latest.content,
@@ -127,7 +130,7 @@ export async function checkFeed(feed: Feed): Promise<void> {
               components: [
                 {
                   type: ComponentType.TextDisplay,
-                  content: `## [${titleFR}](${link})\n**${latest.creator ?? getDomain(link)}**`,
+                  content: `## [${title}](${link})\n**${latest.creator ?? getDomain(link)}**`,
                 },
               ],
               accessory: {
@@ -137,15 +140,15 @@ export async function checkFeed(feed: Feed): Promise<void> {
               },
             })
             .addSeparatorComponents((s) => s)
-            .addTextDisplayComponents((t) =>
-              t.setContent(descFR || "Aucune description disponible"),
+            .addTextDisplayComponents((tDisplay) =>
+              tDisplay.setContent(description || t("rss.noDescription")),
             )
             .addSeparatorComponents((s) => s)
             .addActionRowComponents((row) =>
               row.addComponents(
                 new ButtonBuilder()
                   .setStyle(ButtonStyle.Link)
-                  .setLabel("Voir")
+                  .setLabel(t("rss.openLink"))
                   .setURL(link),
               ),
             ),
@@ -158,14 +161,18 @@ export async function checkFeed(feed: Feed): Promise<void> {
       }
 
       await channel.send(messagePayload);
+      logger.info(t("log.feedAdded", { title }));
     }
   } catch (err) {
-    console.error(`Erreur RSS (${feed.url}) :`, err);
+    logger.error({ err }, t("log.rssError", { url: feed.url }));
   }
 }
 
+const CONCURRENCY = 5;
+
 export async function checkAllFeeds(): Promise<void> {
-  for (const feed of rssData.feeds) {
-    await checkFeed(feed);
-  }
+  const feeds = rssData.feeds;
+  logger.info(t("log.rssCheckStart", { count: feeds.length }));
+  await mapLimit(feeds, CONCURRENCY, (feed) => checkFeed(feed));
+  logger.info(t("log.rssCheckDone"));
 }

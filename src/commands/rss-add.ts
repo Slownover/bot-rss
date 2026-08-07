@@ -6,34 +6,36 @@ import {
 } from "discord.js";
 import type { Command } from "../types.js";
 import { generateUltimateHash } from "../utils/function.js";
+import { t } from "../i18n.js";
 
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("rss-add")
-    .setDescription("Add an RSS feed")
+    .setDescription(t("cmd.add.description"))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addStringOption((opt) =>
-      opt.setName("url").setDescription("RSS feed URL").setRequired(true),
+      opt
+        .setName("url")
+        .setDescription(t("cmd.add.url"))
+        .setRequired(true),
     )
     .addChannelOption((opt) =>
       opt
         .setName("channel")
-        .setDescription("Trade show where to send items")
+        .setDescription(t("cmd.add.channel"))
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true),
     )
     .addBooleanOption((opt) =>
       opt
         .setName("sensitive")
-        .setDescription(
-          "URL contains sensitive data (tokens). Masked in /rss-list",
-        )
+        .setDescription(t("cmd.add.sensitive"))
         .setRequired(false),
     )
     .addBooleanOption((opt) =>
       opt
         .setName("translate")
-        .setDescription("Translate feed content (default: false)")
+        .setDescription(t("cmd.add.translate"))
         .setRequired(false),
     ),
 
@@ -55,7 +57,7 @@ const command: Command = {
 
     saveRSS();
     await interaction.reply({
-      content: `✔ Added feed : \`${url}\` → <#${channel.id}> (\`${id}\`)`,
+      content: t("cmd.add.success", { url, channel: channel.id, id }),
       flags: sensitive ? MessageFlags.Ephemeral : undefined,
     });
   },
