@@ -11,6 +11,7 @@ export interface Feed {
   channel: string;
   last: string | null;
   id: string;
+  site?: string;
   sensitive?: boolean;
   translate?: boolean;
   enabled?: boolean;

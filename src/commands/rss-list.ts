@@ -1,31 +1,114 @@
 import {
-  ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ComponentType,
+  ContainerBuilder,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
+import type { ChatInputCommandInteraction } from "discord.js";
 import type { Command, Feed } from "../types.js";
 import { getDomain } from "../utils/function.js";
 import { t } from "../i18n.js";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 const COLLECTOR_TIME = 60_000;
+const FALLBACK_ICON =
+  "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128";
 
-function buildButtons(page: number, pageCount: number): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId("rss-list-prev")
-      .setLabel("◀")
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(page === 0),
-    new ButtonBuilder()
-      .setCustomId("rss-list-next")
-      .setLabel("▶")
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(page >= pageCount - 1),
+function feedIcon(feed: Feed, showFull: boolean): string {
+  if (feed.sensitive && !showFull) return FALLBACK_ICON;
+  const site = feed.site ?? getDomain(feed.url);
+  if (!site) return FALLBACK_ICON;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(site)}&sz=64`;
+}
+
+function buildEntry(
+  f: Feed,
+  showFull: boolean,
+  interaction: ChatInputCommandInteraction,
+): { content: string; iconUrl: string } {
+  const url = showFull
+    ? `\`${f.url}\``
+    : f.sensitive
+      ? `\`${getDomain(f.url) ?? "unknown"}/...\``
+      : `\`${f.url}\``;
+
+  const badges: string[] = [];
+  if (f.enabled === false) badges.push(t("cmd.list.paused"));
+  if (f.intervalMinutes) {
+    badges.push(t("cmd.list.customInterval", { min: f.intervalMinutes }));
+  }
+  if (f.roleId) {
+    const role = interaction.guild?.roles.cache.get(f.roleId);
+    badges.push(t("cmd.list.role", { role: role?.name ?? f.roleId }));
+  }
+  if (f.whitelist?.length || f.blacklist?.length) {
+    badges.push(t("cmd.list.filtered"));
+  }
+  if (f.translate) badges.push(t("cmd.list.translated"));
+
+  const suffix = badges.length ? ` — ${badges.join(" ")}` : "";
+  return {
+    content: `**\`${f.id}\`**: ${url}\n → <#${f.channel}>${suffix}`,
+    iconUrl: feedIcon(f, showFull),
+  };
+}
+
+function buildContainer(
+  entries: { content: string; iconUrl: string }[],
+  title: string,
+  page: number,
+  pageCount: number,
+  disabledPrev: boolean,
+  disabledNext: boolean,
+): ContainerBuilder {
+  const container = new ContainerBuilder();
+
+  container.addTextDisplayComponents((td) =>
+    td.setContent(title || "## RSS List"),
   );
+
+  for (const entry of entries) {
+    container.addSeparatorComponents((s) => s);
+    container.addSectionComponents({
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content: entry.content,
+        },
+      ],
+      accessory: {
+        type: ComponentType.Thumbnail,
+        media: { url: entry.iconUrl },
+      },
+    });
+  }
+
+  container.addSeparatorComponents((s) => s);
+
+  container.addTextDisplayComponents((td) =>
+    td.setContent(t("cmd.list.pageInfo", { page: page + 1, total: pageCount })),
+  );
+
+  container.addActionRowComponents((row) =>
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId("rss-list-prev")
+        .setLabel("◀")
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(disabledPrev),
+      new ButtonBuilder()
+        .setCustomId("rss-list-next")
+        .setLabel("▶")
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(disabledNext),
+    ),
+  );
+
+  return container;
 }
 
 const command: Command = {
@@ -33,10 +116,7 @@ const command: Command = {
     .setName("rss-list")
     .setDescription(t("cmd.list.description"))
     .addBooleanOption((opt) =>
-      opt
-        .setName("full")
-        .setDescription(t("cmd.list.full"))
-        .setRequired(false),
+      opt.setName("full").setDescription(t("cmd.list.full")).setRequired(false),
     ),
 
   async execute(interaction, rssData) {
@@ -47,7 +127,7 @@ const command: Command = {
 
     const showFull = interaction.options.getBoolean("full") ?? false;
 
-    let title: string;
+    let title = "";
     let ephemeral = false;
 
     if (showFull) {
@@ -65,67 +145,40 @@ const command: Command = {
 
       title = t("cmd.list.fullTitle");
       ephemeral = true;
-    } else {
-      title = "";
-      ephemeral = false;
     }
 
-    const buildEntry = (f: Feed): string => {
-      const url = showFull
-        ? `\`${f.url}\``
-        : f.sensitive
-          ? `\`${getDomain(f.url) ?? "unknown"}/...\``
-          : `\`${f.url}\``;
+    const entries = rssData.feeds.map((f) =>
+      buildEntry(f, showFull, interaction),
+    );
 
-      const badges: string[] = [];
-      if (f.enabled === false) badges.push(t("cmd.list.paused"));
-      if (f.intervalMinutes) {
-        badges.push(t("cmd.list.customInterval", { min: f.intervalMinutes }));
-      }
-      if (f.roleId) {
-        const role = interaction.guild?.roles.cache.get(f.roleId);
-        badges.push(t("cmd.list.role", { role: role?.name ?? f.roleId }));
-      }
-      if (f.whitelist?.length || f.blacklist?.length) {
-        badges.push(t("cmd.list.filtered"));
-      }
-      if (f.translate) badges.push(t("cmd.list.translated"));
-
-      const suffix = badges.length ? ` — ${badges.join(" ")}` : "";
-      return `**\`${f.id}\`**: ${url} → <#${f.channel}>${suffix}`;
-    };
-
-    const entries = rssData.feeds.map(buildEntry);
-
-    const pages: string[] = [];
+    const pages: { content: string; iconUrl: string }[][] = [];
     for (let i = 0; i < entries.length; i += PAGE_SIZE) {
-      pages.push(entries.slice(i, i + PAGE_SIZE).join("\n"));
+      pages.push(entries.slice(i, i + PAGE_SIZE));
     }
 
-    const buildContent = (page: number): string => {
-      const header = title ? `${title}\n` : "";
-      const pageInfo = `\n${t("cmd.list.pageInfo", {
-        page: page + 1,
-        total: pages.length,
-      })}`;
-      return `${header}${pages[page]}${pageInfo}`;
-    };
+    const flags = ephemeral
+      ? MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+      : MessageFlags.IsComponentsV2;
 
-    if (pages.length === 1) {
-      await interaction.reply({
-        content: buildContent(0),
-        flags: ephemeral ? MessageFlags.Ephemeral : undefined,
-      });
-      return;
-    }
+    const singlePage = pages.length === 1;
 
     let page = 0;
     const message = await interaction.reply({
-      content: buildContent(page),
-      components: [buildButtons(page, pages.length)],
-      flags: ephemeral ? MessageFlags.Ephemeral : undefined,
+      components: [
+        buildContainer(
+          pages[page],
+          title,
+          page,
+          pages.length,
+          singlePage,
+          singlePage,
+        ),
+      ],
+      flags,
       fetchReply: true,
     });
+
+    if (singlePage) return;
 
     const collector = message.createMessageComponentCollector({
       filter: (i) =>
@@ -140,28 +193,25 @@ const command: Command = {
       if (i.customId === "rss-list-next" && page < pages.length - 1) page++;
 
       await i.update({
-        content: buildContent(page),
-        components: [buildButtons(page, pages.length)],
+        components: [
+          buildContainer(
+            pages[page],
+            title,
+            page,
+            pages.length,
+            page === 0,
+            page >= pages.length - 1,
+          ),
+        ],
       });
     });
 
     collector.on("end", async () => {
-      const disabled = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId("rss-list-prev")
-          .setLabel("◀")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId("rss-list-next")
-          .setLabel("▶")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true),
-      );
       try {
         await interaction.editReply({
-          content: buildContent(page),
-          components: [disabled],
+          components: [
+            buildContainer(pages[page], title, page, pages.length, true, true),
+          ],
         });
       } catch {
         // Message may have been deleted; nothing to do.

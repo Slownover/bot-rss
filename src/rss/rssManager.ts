@@ -128,6 +128,14 @@ function handleRecovery(feed: Feed): void {
   }
 }
 
+function recordSite(feed: Feed, parsed: ParsedFeed): void {
+  const site = getDomain(parsed.link) ?? getDomain(feed.url);
+  if (site && feed.site !== site) {
+    feed.site = site;
+    saveRSS();
+  }
+}
+
 export async function checkFeed(feed: Feed): Promise<void> {
   if (feed.enabled === false) {
     logger.debug(t("log.feedPaused", { url: feed.url }));
@@ -143,6 +151,7 @@ export async function checkFeed(feed: Feed): Promise<void> {
   }
 
   handleRecovery(feed);
+  recordSite(feed, parsed);
 
   const latest = parsed.items[0];
   const link = latest?.link;
