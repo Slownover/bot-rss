@@ -28,6 +28,10 @@ import type { Feed } from "../types.js";
 
 const CONCURRENCY = 5;
 const MAX_SENT_HISTORY = 500;
+const MAX_BATCH_ITEMS = 10;
+
+type FeedItem = ParsedFeed["items"][number];
+type LinkedFeedItem = FeedItem & { link: string };
 
 const alertedFeeds = new Set<string>();
 
@@ -136,48 +140,45 @@ function recordSite(feed: Feed, parsed: ParsedFeed): void {
   }
 }
 
-export async function checkFeed(feed: Feed): Promise<void> {
-  if (feed.enabled === false) {
-    logger.debug(t("log.feedPaused", { url: feed.url }));
-    return;
-  }
-
-  let parsed: ParsedFeed;
-  try {
-    parsed = await parseFeedWithRetry(feed.url);
-  } catch (err) {
-    registerFailure(feed, err);
-    return;
-  }
-
-  handleRecovery(feed);
-  recordSite(feed, parsed);
-
-  const latest = parsed.items[0];
-  const link = latest?.link;
-  if (!link) return;
-
-  const known =
+function isKnown(feed: Feed, link: string): boolean {
+  return (
     feed.last === link ||
     rssData.sent.includes(link) ||
-    rssData.feeds.some((f) => f.last === link);
+    rssData.feeds.some((f) => f.last === link)
+  );
+}
 
-  if (known) {
+function collectPendingItems(feed: Feed, items: FeedItem[]): LinkedFeedItem[] {
+  const pending: LinkedFeedItem[] = [];
+  const seenLinks = new Set<string>();
+  const isFirstCheck = feed.last === null;
+
+  for (const item of items) {
+    const link = item.link;
+    if (!link || seenLinks.has(link)) continue;
+    seenLinks.add(link);
+
+    if (isKnown(feed, link)) break;
+    pending.push({ ...item, link });
+
+    if (isFirstCheck) break;
+    if (pending.length >= MAX_BATCH_ITEMS) break;
+  }
+
+  return pending.reverse();
+}
+
+async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<void> {
+  const link = item.link;
+
+  if (isFiltered(feed, item.title, item.contentSnippet ?? item.content)) {
     advanceLast(feed, link);
+    logger.info(t("log.feedSkipped", { title: item.title ?? link }));
     return;
   }
 
-  if (
-    isFiltered(
-      feed,
-      latest.title,
-      latest.contentSnippet ?? latest.content,
-    )
-  ) {
-    advanceLast(feed, link);
-    logger.info(t("log.feedSkipped", { title: latest.title ?? link }));
-    return;
-  }
+  const channel = client.channels.cache.get(feed.channel);
+  if (!channel?.isSendable()) return;
 
   feed.last = link;
   saveRSS();
@@ -185,28 +186,25 @@ export async function checkFeed(feed: Feed): Promise<void> {
   const shouldTranslate = feed.translate === true;
 
   const title = shouldTranslate
-    ? (await translate(latest.title, config.targetLanguage)) ||
+    ? (await translate(item.title, config.targetLanguage)) ||
       getDomain(link) ||
       t("rss.noTitle")
-    : latest.title || getDomain(link) || t("rss.noTitle");
+    : item.title || getDomain(link) || t("rss.noTitle");
 
   const description = truncateDiscord(
     shouldTranslate
       ? await translate(
-          latest.contentSnippet || latest.content,
+          item.contentSnippet || item.content,
           config.targetLanguage,
         )
-      : (latest.contentSnippet || latest.content) ?? "",
+      : (item.contentSnippet || item.content) ?? "",
     1950,
   );
 
-  const channel = client.channels.cache.get(feed.channel);
-  if (!channel?.isSendable()) return;
-
   let illustration =
-    latest?.enclosure?.url ??
-    latest.mediaThumbnail?.[0].$.url ??
-    latest.mediaContent?.[0].$.url;
+    item?.enclosure?.url ??
+    item.mediaThumbnail?.[0].$.url ??
+    item.mediaContent?.[0].$.url;
   let attachmentFile: { attachment: Buffer; name: string } | null = null;
 
   if (!illustration) {
@@ -244,7 +242,7 @@ export async function checkFeed(feed: Feed): Promise<void> {
           components: [
             {
               type: ComponentType.TextDisplay,
-              content: `## [${title}](${link})\n**${latest.creator ?? getDomain(link)}**`,
+              content: `## [${title}](${link})\n**${item.creator ?? getDomain(link)}**`,
             },
           ],
           accessory: {
@@ -289,6 +287,32 @@ export async function checkFeed(feed: Feed): Promise<void> {
   recordPosted(link);
   saveRSS();
   logger.info(t("log.feedAdded", { title }));
+}
+
+export async function checkFeed(feed: Feed): Promise<void> {
+  if (feed.enabled === false) {
+    logger.debug(t("log.feedPaused", { url: feed.url }));
+    return;
+  }
+
+  let parsed: ParsedFeed;
+  try {
+    parsed = await parseFeedWithRetry(feed.url);
+  } catch (err) {
+    registerFailure(feed, err);
+    return;
+  }
+
+  handleRecovery(feed);
+  recordSite(feed, parsed);
+
+  if (!parsed.items.length) return;
+
+  const pending = collectPendingItems(feed, parsed.items);
+
+  for (const item of pending) {
+    await publishItem(feed, item);
+  }
 }
 
 export async function checkDefaultFeeds(): Promise<void> {
