@@ -37,6 +37,7 @@ type LinkedFeedItem = FeedItem & { link: string };
 const alertedFeeds = new Set<string>();
 const inFlight = new Set<string>();
 const sendFailures = new Map<string, number>();
+const posting = new Set<string>();
 
 function isFiltered(
   feed: Feed,
@@ -145,6 +146,7 @@ function recordSite(feed: Feed, parsed: ParsedFeed): void {
 
 function isPublishedElsewhere(link: string): boolean {
   return (
+    posting.has(link) ||
     rssData.sent.includes(link) ||
     rssData.feeds.some((f) => f.last === link)
   );
@@ -203,127 +205,137 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
     return false;
   }
 
-  const shouldTranslate = feed.translate === true;
-
-  const title = shouldTranslate
-    ? (await translate(item.title, config.targetLanguage)) ||
-      getDomain(link) ||
-      t("rss.noTitle")
-    : item.title || getDomain(link) || t("rss.noTitle");
-
-  const description = truncateDiscord(
-    shouldTranslate
-      ? await translate(
-          item.contentSnippet || item.content,
-          config.targetLanguage,
-        )
-      : (item.contentSnippet || item.content) ?? "",
-    1950,
-  );
-
-  let illustration =
-    item?.enclosure?.url ??
-    item.mediaThumbnail?.[0].$.url ??
-    item.mediaContent?.[0].$.url;
-  let attachmentFile: { attachment: Buffer; name: string } | null = null;
-
-  if (!illustration) {
-    const domain = getDomain(link);
-    if (domain) {
-      const faviconBuffer = await getSiteIcon(domain);
-
-      if (faviconBuffer) {
-        attachmentFile = {
-          attachment: faviconBuffer,
-          name: "favicon.png",
-        };
-
-        illustration = "attachment://favicon.png";
-      }
-    }
+  if (isPublishedElsewhere(link)) {
+    logger.info(t("log.feedSkippedExisting", { title: item.title ?? link }));
+    return true;
   }
-
-  if (!illustration) {
-    illustration =
-      "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128";
-  }
-
-  const messagePayload: {
-    components: ContainerBuilder[];
-    files?: { attachment: Buffer; name: string }[];
-    flags: number;
-    content?: string;
-  } = {
-    content: feed.roleId ? `<@&${feed.roleId}>` : undefined,
-    components: [
-      new ContainerBuilder()
-        .addSectionComponents({
-          type: ComponentType.Section,
-          components: [
-            {
-              type: ComponentType.TextDisplay,
-              content: `## [${title}](${link})\n**${item.creator ?? getDomain(link)}**`,
-            },
-          ],
-          accessory: {
-            type: ComponentType.Thumbnail,
-            spoiler: false,
-            media: { url: illustration },
-          },
-        })
-        .addSeparatorComponents((s) => s)
-        .addTextDisplayComponents((tDisplay) =>
-          tDisplay.setContent(description || t("rss.noDescription")),
-        )
-        .addSeparatorComponents((s) => s)
-        .addActionRowComponents((row) =>
-          row.addComponents(
-            new ButtonBuilder()
-              .setStyle(ButtonStyle.Link)
-              .setLabel(t("rss.openLink"))
-              .setURL(link),
-          ),
-        ),
-    ],
-    flags: MessageFlags.IsComponentsV2,
-  };
-
-  if (attachmentFile) {
-    messagePayload.files = [attachmentFile];
-  }
+  posting.add(link);
 
   try {
-    await channel.send(messagePayload);
-  } catch (err) {
-    const attempts = (sendFailures.get(link) ?? 0) + 1;
-    sendFailures.set(link, attempts);
-    logger.error({ err }, t("log.rssError", { url: feed.url }));
-    if (attempts >= MAX_SEND_FAILURES) {
-      sendFailures.delete(link);
-      discardItem(link);
-      saveRSS();
-      logger.warn(
-        t("log.sendRetryExhausted", {
-          title: item.title ?? link,
-          count: attempts,
-        }),
-      );
-      return true;
+    const shouldTranslate = feed.translate === true;
+
+    const title = shouldTranslate
+      ? (await translate(item.title, config.targetLanguage)) ||
+        getDomain(link) ||
+        t("rss.noTitle")
+      : item.title || getDomain(link) || t("rss.noTitle");
+
+    const description = truncateDiscord(
+      shouldTranslate
+        ? await translate(
+            item.contentSnippet || item.content,
+            config.targetLanguage,
+          )
+        : (item.contentSnippet || item.content) ?? "",
+      1950,
+    );
+
+    let illustration =
+      item?.enclosure?.url ??
+      item.mediaThumbnail?.[0].$.url ??
+      item.mediaContent?.[0].$.url;
+    let attachmentFile: { attachment: Buffer; name: string } | null = null;
+
+    if (!illustration) {
+      const domain = getDomain(link);
+      if (domain) {
+        const faviconBuffer = await getSiteIcon(domain);
+
+        if (faviconBuffer) {
+          attachmentFile = {
+            attachment: faviconBuffer,
+            name: "favicon.png",
+          };
+
+          illustration = "attachment://favicon.png";
+        }
+      }
     }
-    return false;
+
+    if (!illustration) {
+      illustration =
+        "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128";
+    }
+
+    const messagePayload: {
+      components: ContainerBuilder[];
+      files?: { attachment: Buffer; name: string }[];
+      flags: number;
+      content?: string;
+    } = {
+      content: feed.roleId ? `<@&${feed.roleId}>` : undefined,
+      components: [
+        new ContainerBuilder()
+          .addSectionComponents({
+            type: ComponentType.Section,
+            components: [
+              {
+                type: ComponentType.TextDisplay,
+                content: `## [${title}](${link})\n**${item.creator ?? getDomain(link)}**`,
+              },
+            ],
+            accessory: {
+              type: ComponentType.Thumbnail,
+              spoiler: false,
+              media: { url: illustration },
+            },
+          })
+          .addSeparatorComponents((s) => s)
+          .addTextDisplayComponents((tDisplay) =>
+            tDisplay.setContent(description || t("rss.noDescription")),
+          )
+          .addSeparatorComponents((s) => s)
+          .addActionRowComponents((row) =>
+            row.addComponents(
+              new ButtonBuilder()
+                .setStyle(ButtonStyle.Link)
+                .setLabel(t("rss.openLink"))
+                .setURL(link),
+            ),
+          ),
+      ],
+      flags: MessageFlags.IsComponentsV2,
+    };
+
+    if (attachmentFile) {
+      messagePayload.files = [attachmentFile];
+    }
+
+    try {
+      await channel.send(messagePayload);
+    } catch (err) {
+      const attempts = (sendFailures.get(link) ?? 0) + 1;
+      sendFailures.set(link, attempts);
+      logger.error({ err }, t("log.rssError", { url: feed.url }));
+      if (attempts >= MAX_SEND_FAILURES) {
+        sendFailures.delete(link);
+        discardItem(link);
+        saveRSS();
+        logger.warn(
+          t("log.sendRetryExhausted", {
+            title: item.title ?? link,
+            count: attempts,
+          }),
+        );
+        return true;
+      }
+      return false;
+    }
+
+    await postToWebhook(
+      feed,
+      `## [${title}](${link})\n${description || t("rss.noDescription")}`,
+    );
+
+    feed.last = link;
+    recordPosted(link);
+    saveRSS();
+    sendFailures.delete(link);
+    logger.info(t("log.feedAdded", { title }));
+    return true;
+  } finally {
+    posting.delete(link);
   }
-
-  await postToWebhook(
-    feed,
-    `## [${title}](${link})\n${description || t("rss.noDescription")}`,
-  );
-
-  feed.last = link;
-  recordPosted(link);
-  saveRSS();
-  sendFailures.delete(link);
-  logger.info(t("log.feedAdded", { title }));
-  return true;
 }
 
 export async function checkFeed(feed: Feed): Promise<void> {
