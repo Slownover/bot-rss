@@ -29,11 +29,14 @@ import type { Feed } from "../types.js";
 const CONCURRENCY = 5;
 const MAX_SENT_HISTORY = 500;
 const MAX_BATCH_ITEMS = 10;
+const MAX_SEND_FAILURES = 3;
 
 type FeedItem = ParsedFeed["items"][number];
 type LinkedFeedItem = FeedItem & { link: string };
 
 const alertedFeeds = new Set<string>();
+const inFlight = new Set<string>();
+const sendFailures = new Map<string, number>();
 
 function isFiltered(
   feed: Feed,
@@ -140,9 +143,8 @@ function recordSite(feed: Feed, parsed: ParsedFeed): void {
   }
 }
 
-function isKnown(feed: Feed, link: string): boolean {
+function isPublishedElsewhere(link: string): boolean {
   return (
-    feed.last === link ||
     rssData.sent.includes(link) ||
     rssData.feeds.some((f) => f.last === link)
   );
@@ -152,36 +154,54 @@ function collectPendingItems(feed: Feed, items: FeedItem[]): LinkedFeedItem[] {
   const pending: LinkedFeedItem[] = [];
   const seenLinks = new Set<string>();
   const isFirstCheck = feed.last === null;
+  let truncated = false;
 
   for (const item of items) {
     const link = item.link;
     if (!link || seenLinks.has(link)) continue;
     seenLinks.add(link);
 
-    if (isKnown(feed, link)) break;
+    if (feed.last === link) break;
+    if (isPublishedElsewhere(link)) continue;
+
     pending.push({ ...item, link });
 
     if (isFirstCheck) break;
-    if (pending.length >= MAX_BATCH_ITEMS) break;
+    if (pending.length > MAX_BATCH_ITEMS) truncated = true;
   }
 
-  return pending.reverse();
+  let batch = pending;
+  if (truncated) {
+    logger.warn(
+      t("log.batchTruncated", { url: feed.url, max: MAX_BATCH_ITEMS }),
+    );
+    batch = pending.slice(0, MAX_BATCH_ITEMS);
+  }
+
+  return batch.reverse();
 }
 
-async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<void> {
+function discardItem(link: string): void {
+  rssData.sent.push(link);
+  if (rssData.sent.length > MAX_SENT_HISTORY) {
+    rssData.sent.splice(0, rssData.sent.length - MAX_SENT_HISTORY);
+  }
+}
+
+async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
   const link = item.link;
 
   if (isFiltered(feed, item.title, item.contentSnippet ?? item.content)) {
     advanceLast(feed, link);
     logger.info(t("log.feedSkipped", { title: item.title ?? link }));
-    return;
+    return true;
   }
 
   const channel = client.channels.cache.get(feed.channel);
-  if (!channel?.isSendable()) return;
-
-  feed.last = link;
-  saveRSS();
+  if (!channel?.isSendable()) {
+    logger.warn(t("log.channelUnavailable", { url: feed.url }));
+    return false;
+  }
 
   const shouldTranslate = feed.translate === true;
 
@@ -275,8 +295,22 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<void> {
   try {
     await channel.send(messagePayload);
   } catch (err) {
+    const attempts = (sendFailures.get(link) ?? 0) + 1;
+    sendFailures.set(link, attempts);
     logger.error({ err }, t("log.rssError", { url: feed.url }));
-    return;
+    if (attempts >= MAX_SEND_FAILURES) {
+      sendFailures.delete(link);
+      discardItem(link);
+      saveRSS();
+      logger.warn(
+        t("log.sendRetryExhausted", {
+          title: item.title ?? link,
+          count: attempts,
+        }),
+      );
+      return true;
+    }
+    return false;
   }
 
   await postToWebhook(
@@ -284,9 +318,12 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<void> {
     `## [${title}](${link})\n${description || t("rss.noDescription")}`,
   );
 
+  feed.last = link;
   recordPosted(link);
   saveRSS();
+  sendFailures.delete(link);
   logger.info(t("log.feedAdded", { title }));
+  return true;
 }
 
 export async function checkFeed(feed: Feed): Promise<void> {
@@ -295,23 +332,34 @@ export async function checkFeed(feed: Feed): Promise<void> {
     return;
   }
 
-  let parsed: ParsedFeed;
-  try {
-    parsed = await parseFeedWithRetry(feed.url);
-  } catch (err) {
-    registerFailure(feed, err);
+  if (inFlight.has(feed.id)) {
+    logger.debug(t("log.feedCheckSkipped", { url: feed.url }));
     return;
   }
+  inFlight.add(feed.id);
 
-  handleRecovery(feed);
-  recordSite(feed, parsed);
+  try {
+    let parsed: ParsedFeed;
+    try {
+      parsed = await parseFeedWithRetry(feed.url);
+    } catch (err) {
+      registerFailure(feed, err);
+      return;
+    }
 
-  if (!parsed.items.length) return;
+    handleRecovery(feed);
+    recordSite(feed, parsed);
 
-  const pending = collectPendingItems(feed, parsed.items);
+    if (!parsed.items.length) return;
 
-  for (const item of pending) {
-    await publishItem(feed, item);
+    const pending = collectPendingItems(feed, parsed.items);
+
+    for (const item of pending) {
+      const ok = await publishItem(feed, item);
+      if (!ok) break;
+    }
+  } finally {
+    inFlight.delete(feed.id);
   }
 }
 

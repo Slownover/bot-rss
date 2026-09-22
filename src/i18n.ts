@@ -123,6 +123,12 @@ const fr = {
   "log.feedSkipped": "Article ignoré (filtres) : {title}",
   "log.feedSkippedExisting": "Article déjà envoyé : {title}",
   "log.feedPaused": "Flux en pause, ignoré : {url}",
+  "log.feedCheckSkipped": "Vérification du flux déjà en cours, ignorée : {url}",
+  "log.channelUnavailable": "Salon indisponible pour le flux : {url}",
+  "log.batchTruncated":
+    "Lot d'articles tronqué à {max} pour le flux : {url}",
+  "log.sendRetryExhausted":
+    "Échec d'envoi après {count} tentatives, article abandonné : {title}",
   "log.feedErrorAlert": "Flux en échec après {count} tentatives : {url}",
   "log.feedRecovered": "Le flux fonctionne à nouveau : {url}",
   "log.adminAlertError": "Erreur lors de l'envoi de l'alerte admin",
@@ -261,6 +267,11 @@ const en: { [K in keyof typeof fr]: string } = {
   "log.feedSkipped": "Article skipped (filters): {title}",
   "log.feedSkippedExisting": "Article already sent: {title}",
   "log.feedPaused": "Feed paused, skipped: {url}",
+  "log.feedCheckSkipped": "Feed check already in progress, skipped: {url}",
+  "log.channelUnavailable": "Channel unavailable for feed: {url}",
+  "log.batchTruncated": "Article batch truncated to {max} for feed: {url}",
+  "log.sendRetryExhausted":
+    "Send failed after {count} attempts, article dropped: {title}",
   "log.feedErrorAlert": "Feed failing after {count} attempts: {url}",
   "log.feedRecovered": "Feed is working again: {url}",
   "log.adminAlertError": "Error while sending admin alert",
