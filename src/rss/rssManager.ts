@@ -11,6 +11,7 @@ import { translate } from "../translate.js";
 import { client } from "../core/client.js";
 import {
   getDomain,
+  MAX_SENT_HISTORY,
   rssData,
   saveRSS,
   truncateDiscord,
@@ -27,7 +28,6 @@ import {
 import type { Feed } from "../types.js";
 
 const CONCURRENCY = 5;
-const MAX_SENT_HISTORY = 500;
 const MAX_BATCH_ITEMS = 10;
 const MAX_SEND_FAILURES = 3;
 

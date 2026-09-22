@@ -28,6 +28,8 @@ export function truncateDiscord(str: string, limit = 2000): string {
 
 const rssPath = resolveProjectFile("rss.json");
 
+export const MAX_SENT_HISTORY = 500;
+
 export let rssData: RSSData = { feeds: [], sent: [], stats: { postedCount: 0, lastPostAt: null } };
 
 try {
@@ -39,6 +41,13 @@ try {
   };
 } catch {
   logger.warn(t("log.rssDataMissing"));
+}
+
+if (rssData.sent.length > MAX_SENT_HISTORY) {
+  rssData.sent.splice(0, rssData.sent.length - MAX_SENT_HISTORY);
+  try {
+    saveRSS();
+  } catch {}
 }
 
 export function saveRSS(): void {
