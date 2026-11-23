@@ -6,5 +6,11 @@
   "targetLanguage": "en",
   "lang": "fr",
   "adminChannelId": "",
-  "maxFeedFailures": 5
+  "maxFeedFailures": 5,
+  "digestCron": "0 8,18 * * *",
+  "digestChannelId": "",
+  "highlightScore": 5,
+  "digestScore": 0,
+  "votesEnabled": false,
+  "voteRoleId": ""
 }
