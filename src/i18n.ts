@@ -16,6 +16,8 @@ const fr = {
     "Mots-clés (séparés par des virgules) : les articles en contenant un sont ignorés",
   "cmd.add.webhook":
     "URL d'un webhook Discord : envoi supplémentaire à ce webhook",
+  "cmd.add.digest":
+    "Mode digest : les articles sont regroupés dans un récapitulatif périodique",
   "cmd.add.preview": "**Aperçu du flux**\n📰 {title}\n🔗 {link}\n\nL'article le plus récent sera publié lors de la prochaine vérification.\nAjouter ce flux ?",
   "cmd.add.confirm": "Ajouter",
   "cmd.add.cancel": "Annuler",
@@ -46,6 +48,7 @@ const fr = {
   "cmd.list.filtered": "🔍 filtré",
   "cmd.list.translated": "🌐",
   "cmd.list.role": "👥 @{role}",
+  "cmd.list.digest": "📬 digest",
 
   "cmd.edit.description": "Modifier un flux RSS",
   "cmd.edit.id": "ID du flux (voir /rss-list)",
@@ -78,6 +81,37 @@ const fr = {
   "cmd.edit.lbl.whitelistCleared": "whitelist vidée",
   "cmd.edit.lbl.blacklist": "blacklist : {kw}",
   "cmd.edit.lbl.blacklistCleared": "blacklist vidée",
+  "cmd.edit.digest": "Activer ou désactiver le mode digest",
+  "cmd.edit.lbl.digestOn": "mode digest activé",
+  "cmd.edit.lbl.digestOff": "mode digest désactivé",
+
+  "cmd.interests.description": "Gérer les centres d'intérêt utilisés pour trier les articles",
+  "cmd.interests.add": "Ajouter ou modifier un mot-clé pondéré",
+  "cmd.interests.remove": "Retirer un mot-clé",
+  "cmd.interests.list": "Afficher le profil d'intérêts",
+  "cmd.interests.resetLearned":
+    "Oublier tout ce qui a été appris des votes (mots-clés manuels conservés)",
+  "cmd.interests.keyword": "Mot-clé ou expression",
+  "cmd.interests.weight":
+    "Poids de -10 à 10 (positif = mis en avant, négatif = digest, 0 = retirer)",
+  "cmd.interests.none": "aucun",
+  "cmd.interests.title": "**🎯 Profil d'intérêts**",
+  "cmd.interests.thresholds":
+    "⭐ mis en avant à partir de {highlight} · 📬 digest en dessous de {digest}",
+  "cmd.interests.keywords": "**Mots-clés :** {list}",
+  "cmd.interests.liked": "**Appris 👍 :** {list}",
+  "cmd.interests.disliked": "**Appris 👎 :** {list}",
+  "cmd.interests.sources": "**Sources :** {list}",
+  "cmd.interests.added": "✔ Mot-clé `{keyword}` : poids {weight}",
+  "cmd.interests.removed": "🗑️ Mot-clé `{keyword}` retiré.",
+  "cmd.interests.notFound": "❌ Mot-clé `{keyword}` introuvable.",
+  "cmd.interests.invalidKeyword": "❌ Mot-clé invalide.",
+  "cmd.interests.resetDone": "✔ Apprentissage réinitialisé.",
+
+  "cmd.digest.description": "Envoyer maintenant le digest en attente",
+  "cmd.digest.empty": "📭 Aucun article en attente dans le digest.",
+  "cmd.digest.running": "⏳ Un digest est déjà en cours d'envoi.",
+  "cmd.digest.sent": "✔ {sent}/{pending} article(s) envoyé(s) dans le digest.",
 
   "cmd.stats.description": "Statistiques du bot RSS",
   "cmd.stats.title": "**📊 Statistiques RSS**",
@@ -105,6 +139,12 @@ const fr = {
   "rss.feedErrorAlert":
     "🚨 Le flux `{url}` échoue depuis {count} vérifications consécutives. Vérifiez sa disponibilité ou supprimez-le avec /rss-remove.",
   "rss.feedRecovered": "✅ Le flux `{url}` fonctionne à nouveau.",
+  "rss.digestTitle": "## 📬 Digest — {count} article(s)",
+  "vote.disabled": "❌ Les votes sont désactivés.",
+  "vote.noPermission": "❌ Vous n'avez pas la permission de voter.",
+  "vote.unknown": "❌ Cet article est trop ancien pour être noté.",
+  "vote.recorded": "Noté {emoji}",
+  "vote.unchanged": "Vous avez déjà voté {emoji} pour cet article.",
 
   "log.rssDataMissing":
     "rss.json n'existe pas ; il sera créé à la première inscription.",
@@ -122,6 +162,12 @@ const fr = {
   "log.feedAdded": "Nouvel article : {title}",
   "log.feedSkipped": "Article ignoré (filtres) : {title}",
   "log.feedSkippedExisting": "Article déjà envoyé : {title}",
+  "log.feedQueuedDigest": "Article mis en digest (score {score}) : {title}",
+  "log.digestSent": "Digest envoyé : {count} article(s)",
+  "log.digestSendError": "Erreur lors de l'envoi du digest (salon {channel})",
+  "log.digestChannelUnavailable":
+    "Salon indisponible pour le digest, articles conservés : {channel}",
+  "log.voteError": "Erreur lors du traitement d'un vote",
   "log.feedPaused": "Flux en pause, ignoré : {url}",
   "log.feedCheckSkipped": "Vérification du flux déjà en cours, ignorée : {url}",
   "log.channelUnavailable": "Salon indisponible pour le flux : {url}",
@@ -159,6 +205,8 @@ const en: { [K in keyof typeof fr]: string } = {
     "Comma-separated keywords: articles containing one are skipped",
   "cmd.add.webhook":
     "Discord webhook URL: also send the article to this webhook",
+  "cmd.add.digest":
+    "Digest mode: articles are grouped into a periodic summary",
   "cmd.add.preview": "**Feed preview**\n📰 {title}\n🔗 {link}\n\nThe latest article will be posted at the next check.\nAdd this feed?",
   "cmd.add.confirm": "Add",
   "cmd.add.cancel": "Cancel",
@@ -190,6 +238,7 @@ const en: { [K in keyof typeof fr]: string } = {
   "cmd.list.filtered": "🔍 filtered",
   "cmd.list.translated": "🌐",
   "cmd.list.role": "👥 @{role}",
+  "cmd.list.digest": "📬 digest",
 
   "cmd.edit.description": "Edit an RSS feed",
   "cmd.edit.id": "Feed ID (see /rss-list)",
@@ -222,6 +271,37 @@ const en: { [K in keyof typeof fr]: string } = {
   "cmd.edit.lbl.whitelistCleared": "whitelist cleared",
   "cmd.edit.lbl.blacklist": "blacklist: {kw}",
   "cmd.edit.lbl.blacklistCleared": "blacklist cleared",
+  "cmd.edit.digest": "Enable or disable digest mode",
+  "cmd.edit.lbl.digestOn": "digest mode enabled",
+  "cmd.edit.lbl.digestOff": "digest mode disabled",
+
+  "cmd.interests.description": "Manage the interests used to rank articles",
+  "cmd.interests.add": "Add or update a weighted keyword",
+  "cmd.interests.remove": "Remove a keyword",
+  "cmd.interests.list": "Show the interest profile",
+  "cmd.interests.resetLearned":
+    "Forget everything learned from votes (manual keywords are kept)",
+  "cmd.interests.keyword": "Keyword or phrase",
+  "cmd.interests.weight":
+    "Weight from -10 to 10 (positive = highlight, negative = digest, 0 = remove)",
+  "cmd.interests.none": "none",
+  "cmd.interests.title": "**🎯 Interest profile**",
+  "cmd.interests.thresholds":
+    "⭐ highlighted from {highlight} · 📬 digest below {digest}",
+  "cmd.interests.keywords": "**Keywords:** {list}",
+  "cmd.interests.liked": "**Learned 👍:** {list}",
+  "cmd.interests.disliked": "**Learned 👎:** {list}",
+  "cmd.interests.sources": "**Sources:** {list}",
+  "cmd.interests.added": "✔ Keyword `{keyword}`: weight {weight}",
+  "cmd.interests.removed": "🗑️ Keyword `{keyword}` removed.",
+  "cmd.interests.notFound": "❌ Keyword `{keyword}` not found.",
+  "cmd.interests.invalidKeyword": "❌ Invalid keyword.",
+  "cmd.interests.resetDone": "✔ Learning reset.",
+
+  "cmd.digest.description": "Send the pending digest now",
+  "cmd.digest.empty": "📭 No article pending in the digest.",
+  "cmd.digest.running": "⏳ A digest is already being sent.",
+  "cmd.digest.sent": "✔ {sent}/{pending} article(s) sent in the digest.",
 
   "cmd.stats.description": "RSS bot statistics",
   "cmd.stats.title": "**📊 RSS Statistics**",
@@ -249,6 +329,12 @@ const en: { [K in keyof typeof fr]: string } = {
   "rss.feedErrorAlert":
     "🚨 The feed `{url}` has been failing for {count} consecutive checks. Check its availability or delete it with /rss-remove.",
   "rss.feedRecovered": "✅ The feed `{url}` is working again.",
+  "rss.digestTitle": "## 📬 Digest — {count} article(s)",
+  "vote.disabled": "❌ Votes are disabled.",
+  "vote.noPermission": "❌ You don't have permission to vote.",
+  "vote.unknown": "❌ This article is too old to be rated.",
+  "vote.recorded": "Noted {emoji}",
+  "vote.unchanged": "You already voted {emoji} for this article.",
 
   "log.rssDataMissing":
     "rss.json does not exist; it will be created on the first registration.",
@@ -266,6 +352,12 @@ const en: { [K in keyof typeof fr]: string } = {
   "log.feedAdded": "New article: {title}",
   "log.feedSkipped": "Article skipped (filters): {title}",
   "log.feedSkippedExisting": "Article already sent: {title}",
+  "log.feedQueuedDigest": "Article queued for digest (score {score}): {title}",
+  "log.digestSent": "Digest sent: {count} article(s)",
+  "log.digestSendError": "Error while sending the digest (channel {channel})",
+  "log.digestChannelUnavailable":
+    "Digest channel unavailable, articles kept: {channel}",
+  "log.voteError": "Error while handling a vote",
   "log.feedPaused": "Feed paused, skipped: {url}",
   "log.feedCheckSkipped": "Feed check already in progress, skipped: {url}",
   "log.channelUnavailable": "Channel unavailable for feed: {url}",

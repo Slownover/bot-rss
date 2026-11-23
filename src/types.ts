@@ -4,6 +4,7 @@ import type {
   Collection,
   SlashCommandBuilder,
   SlashCommandOptionsOnlyBuilder,
+  SlashCommandSubcommandsOnlyBuilder,
 } from "discord.js";
 
 export interface Feed {
@@ -20,6 +21,7 @@ export interface Feed {
   webhookUrl?: string;
   whitelist?: string[];
   blacklist?: string[];
+  digest?: boolean;
   errorCount?: number;
   lastCheckedAt?: number;
 }
@@ -29,10 +31,39 @@ export interface RSSStats {
   lastPostAt: string | null;
 }
 
+export interface InterestProfile {
+  /** Manually set keyword weights (lowercased, accents stripped). */
+  keywords: Record<string, number>;
+  /** Title-word weights learned from votes. */
+  learned: Record<string, number>;
+  /** Per-feed weights learned from votes, keyed by feed ID. */
+  sources: Record<string, number>;
+}
+
+export interface DigestEntry {
+  feedId: string;
+  channel: string;
+  title: string;
+  link: string;
+  site: string;
+  score: number;
+  addedAt: string;
+}
+
+export interface ArticleMeta {
+  feedId: string;
+  title: string;
+  /** Discord user ID → last vote (1 = up, -1 = down). */
+  voters: Record<string, 1 | -1>;
+}
+
 export interface RSSData {
   feeds: Feed[];
   sent: string[];
   stats: RSSStats;
+  interests: InterestProfile;
+  digest: DigestEntry[];
+  articles: Record<string, ArticleMeta>;
 }
 
 export interface Config {
@@ -44,10 +75,19 @@ export interface Config {
   lang: "fr" | "en";
   adminChannelId?: string;
   maxFeedFailures?: number;
+  digestCron: string;
+  digestChannelId?: string;
+  highlightScore: number;
+  digestScore: number;
+  votesEnabled: boolean;
+  voteRoleId?: string;
 }
 
 export interface Command {
-  data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+  data:
+    | SlashCommandBuilder
+    | SlashCommandOptionsOnlyBuilder
+    | SlashCommandSubcommandsOnlyBuilder;
   execute: (
     interaction: ChatInputCommandInteraction,
     rssData: RSSData,

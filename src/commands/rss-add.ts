@@ -84,6 +84,12 @@ const command: Command = {
         .setName("webhook")
         .setDescription(t("cmd.add.webhook"))
         .setRequired(false),
+    )
+    .addBooleanOption((opt) =>
+      opt
+        .setName("digest")
+        .setDescription(t("cmd.add.digest"))
+        .setRequired(false),
     ),
 
   async execute(interaction, rssData, saveRSS) {
@@ -96,6 +102,7 @@ const command: Command = {
     const whitelist = parseKeywords(interaction.options.getString("whitelist"));
     const blacklist = parseKeywords(interaction.options.getString("blacklist"));
     const webhook = interaction.options.getString("webhook");
+    const digest = interaction.options.getBoolean("digest") ?? false;
 
     if (webhook && !WEBHOOK_RE.test(webhook)) {
       await interaction.reply({
@@ -172,6 +179,7 @@ const command: Command = {
           ...(whitelist.length ? { whitelist } : {}),
           ...(blacklist.length ? { blacklist } : {}),
           ...(webhook ? { webhookUrl: webhook } : {}),
+          ...(digest ? { digest } : {}),
         });
         saveRSS();
 

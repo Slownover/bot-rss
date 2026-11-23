@@ -2,7 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { URL } from "url";
-import type { RSSData } from "../types.js";
+import type { InterestProfile, RSSData } from "../types.js";
 import { resolveProjectFile } from "./paths.js";
 import { logger } from "./logger.js";
 import { t } from "../i18n.js";
@@ -30,14 +30,50 @@ const rssPath = resolveProjectFile("rss.json");
 
 export const MAX_SENT_HISTORY = 500;
 
-export let rssData: RSSData = { feeds: [], sent: [], stats: { postedCount: 0, lastPostAt: null } };
+function emptyInterests(): InterestProfile {
+  return { keywords: {}, learned: {}, sources: {} };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function numberRecord(value: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!isRecord(value)) return out;
+  for (const [k, v] of Object.entries(value)) {
+    if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
+  }
+  return out;
+}
+
+export let rssData: RSSData = {
+  feeds: [],
+  sent: [],
+  stats: { postedCount: 0, lastPostAt: null },
+  interests: emptyInterests(),
+  digest: [],
+  articles: {},
+};
 
 try {
   const raw = JSON.parse(fs.readFileSync(rssPath, "utf8")) as Partial<RSSData>;
+  const interests: Record<string, unknown> = isRecord(raw.interests)
+    ? raw.interests
+    : {};
   rssData = {
     feeds: Array.isArray(raw.feeds) ? raw.feeds : [],
     sent: Array.isArray(raw.sent) ? raw.sent : [],
     stats: raw.stats ?? { postedCount: 0, lastPostAt: null },
+    interests: {
+      keywords: numberRecord(interests.keywords),
+      learned: numberRecord(interests.learned),
+      sources: numberRecord(interests.sources),
+    },
+    digest: Array.isArray(raw.digest) ? raw.digest : [],
+    articles: isRecord(raw.articles)
+      ? (raw.articles as RSSData["articles"])
+      : {},
   };
 } catch {
   logger.warn(t("log.rssDataMissing"));

@@ -88,6 +88,7 @@ const command: Command = {
         "webhookUrl",
         "whitelist",
         "blacklist",
+        "digest",
         "errorCount",
       ] as const) {
         if (src[key] !== undefined) {

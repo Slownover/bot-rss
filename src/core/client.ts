@@ -6,6 +6,7 @@ import { config } from "../config.js";
 import { rssData, saveRSS } from "../utils/function.js";
 import { logger } from "../utils/logger.js";
 import { t } from "../i18n.js";
+import { handleVoteButton, VOTE_PREFIX } from "../rss/votes.js";
 
 const commandsDir = path.join(__dirname, "..", "commands");
 
@@ -26,6 +27,15 @@ for (const file of fs
 }
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton() && interaction.customId.startsWith(VOTE_PREFIX)) {
+    try {
+      await handleVoteButton(interaction);
+    } catch (err) {
+      logger.error({ err }, t("log.voteError"));
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const cmd = client.commands.get(interaction.commandName);

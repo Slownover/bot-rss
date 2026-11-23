@@ -29,6 +29,7 @@ const command: Command = {
     }
 
     const removed = rssData.feeds.splice(index, 1)[0];
+    delete rssData.interests.sources[removed.id];
 
     saveRSS();
 

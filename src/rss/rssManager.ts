@@ -26,8 +26,12 @@ import {
   type ParsedFeed,
 } from "./feedFetcher.js";
 import type { Feed } from "../types.js";
+import { enqueueDigest } from "./digest.js";
+import { articleKey, recordArticle, scoreArticle } from "./scoring.js";
+import { buildVoteButtons } from "./votes.js";
 
 const CONCURRENCY = 5;
+const HIGHLIGHT_COLOR = 0xf5c518;
 const MAX_BATCH_ITEMS = 10;
 const MAX_SEND_FAILURES = 3;
 
@@ -190,6 +194,38 @@ function discardItem(link: string): void {
   }
 }
 
+async function queueForDigest(
+  feed: Feed,
+  item: LinkedFeedItem,
+  score: number,
+): Promise<boolean> {
+  const link = item.link;
+  if (isPublishedElsewhere(link)) {
+    logger.info(t("log.feedSkippedExisting", { title: item.title ?? link }));
+    return true;
+  }
+
+  posting.add(link);
+
+  try {
+    const title =
+      (feed.translate === true
+        ? await translate(item.title, config.targetLanguage)
+        : item.title) ||
+      getDomain(link) ||
+      t("rss.noTitle");
+
+    enqueueDigest(feed, title, link, score);
+    discardItem(link);
+    feed.last = link;
+    saveRSS();
+    logger.info(t("log.feedQueuedDigest", { title, score }));
+    return true;
+  } finally {
+    posting.delete(link);
+  }
+}
+
 async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
   const link = item.link;
 
@@ -197,6 +233,17 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
     advanceLast(feed, link);
     logger.info(t("log.feedSkipped", { title: item.title ?? link }));
     return true;
+  }
+
+  const score = scoreArticle(
+    feed,
+    item.title,
+    item.contentSnippet ?? item.content,
+  );
+  const highlighted = score >= config.highlightScore;
+
+  if (!highlighted && (feed.digest === true || score < config.digestScore)) {
+    return queueForDigest(feed, item, score);
   }
 
   const channel = client.channels.cache.get(feed.channel);
@@ -214,11 +261,13 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
   try {
     const shouldTranslate = feed.translate === true;
 
-    const title = shouldTranslate
+    const baseTitle = shouldTranslate
       ? (await translate(item.title, config.targetLanguage)) ||
         getDomain(link) ||
         t("rss.noTitle")
       : item.title || getDomain(link) || t("rss.noTitle");
+    const title = highlighted ? `⭐ ${baseTitle}` : baseTitle;
+    const voteKey = config.votesEnabled ? articleKey(link) : null;
 
     const description = truncateDiscord(
       shouldTranslate
@@ -257,6 +306,9 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
         "https://cdn.discordapp.com/emojis/616026019455041546.webp?animated=false&size=128";
     }
 
+    const container = new ContainerBuilder();
+    if (highlighted) container.setAccentColor(HIGHLIGHT_COLOR);
+
     const messagePayload: {
       components: ContainerBuilder[];
       files?: { attachment: Buffer; name: string }[];
@@ -265,7 +317,7 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
     } = {
       content: feed.roleId ? `<@&${feed.roleId}>` : undefined,
       components: [
-        new ContainerBuilder()
+        container
           .addSectionComponents({
             type: ComponentType.Section,
             components: [
@@ -291,6 +343,7 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
                 .setStyle(ButtonStyle.Link)
                 .setLabel(t("rss.openLink"))
                 .setURL(link),
+              ...(voteKey ? buildVoteButtons(voteKey) : []),
             ),
           ),
       ],
@@ -329,6 +382,7 @@ async function publishItem(feed: Feed, item: LinkedFeedItem): Promise<boolean> {
 
     feed.last = link;
     recordPosted(link);
+    if (voteKey) recordArticle(voteKey, feed.id, item.title ?? baseTitle);
     saveRSS();
     sendFailures.delete(link);
     logger.info(t("log.feedAdded", { title }));

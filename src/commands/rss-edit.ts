@@ -76,6 +76,12 @@ const command: Command = {
         .setName("blacklist")
         .setDescription(t("cmd.edit.blacklist"))
         .setRequired(false),
+    )
+    .addBooleanOption((opt) =>
+      opt
+        .setName("digest")
+        .setDescription(t("cmd.edit.digest"))
+        .setRequired(false),
     ),
 
   async execute(interaction, rssData, saveRSS) {
@@ -95,6 +101,7 @@ const command: Command = {
     const webhook = interaction.options.getString("webhook") ?? undefined;
     const whitelist = interaction.options.getString("whitelist") ?? undefined;
     const blacklist = interaction.options.getString("blacklist") ?? undefined;
+    const digest = interaction.options.getBoolean("digest") ?? undefined;
 
     const changes: string[] = [];
 
@@ -176,6 +183,14 @@ const command: Command = {
           }),
         );
       }
+    }
+
+    if (digest !== undefined) {
+      if (digest) feed.digest = true;
+      else delete feed.digest;
+      changes.push(
+        t(digest ? "cmd.edit.lbl.digestOn" : "cmd.edit.lbl.digestOff"),
+      );
     }
 
     if (changes.length === 0) {

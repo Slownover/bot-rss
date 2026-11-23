@@ -48,6 +48,7 @@ function buildEntry(
     badges.push(t("cmd.list.filtered"));
   }
   if (f.translate) badges.push(t("cmd.list.translated"));
+  if (f.digest) badges.push(t("cmd.list.digest"));
 
   const suffix = badges.length ? ` — ${badges.join(" ")}` : "";
   return {

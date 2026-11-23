@@ -64,6 +64,44 @@ function loadConfig(): Config {
   ) {
     errors.push("maxFeedFailures (entier >= 1)");
   }
+  if (
+    obj.digestCron !== undefined &&
+    (typeof obj.digestCron !== "string" || !obj.digestCron.trim())
+  ) {
+    errors.push("digestCron (expression cron)");
+  }
+  if (
+    obj.digestChannelId !== undefined &&
+    typeof obj.digestChannelId !== "string"
+  ) {
+    errors.push("digestChannelId (id de salon)");
+  }
+  if (
+    obj.highlightScore !== undefined &&
+    (typeof obj.highlightScore !== "number" ||
+      !Number.isFinite(obj.highlightScore))
+  ) {
+    errors.push("highlightScore (nombre)");
+  }
+  if (
+    obj.digestScore !== undefined &&
+    (typeof obj.digestScore !== "number" || !Number.isFinite(obj.digestScore))
+  ) {
+    errors.push("digestScore (nombre)");
+  }
+  if (
+    typeof obj.highlightScore === "number" &&
+    typeof obj.digestScore === "number" &&
+    obj.digestScore > obj.highlightScore
+  ) {
+    errors.push("digestScore (doit être <= highlightScore)");
+  }
+  if (obj.votesEnabled !== undefined && typeof obj.votesEnabled !== "boolean") {
+    errors.push("votesEnabled (booléen)");
+  }
+  if (obj.voteRoleId !== undefined && typeof obj.voteRoleId !== "string") {
+    errors.push("voteRoleId (id de rôle)");
+  }
 
   if (errors.length > 0) {
     const message = errors.join(", ");
@@ -82,6 +120,14 @@ function loadConfig(): Config {
       (obj.adminChannelId as string | undefined)?.trim() || undefined,
     maxFeedFailures:
       typeof obj.maxFeedFailures === "number" ? obj.maxFeedFailures : undefined,
+    digestCron: (obj.digestCron as string | undefined) ?? "0 8,18 * * *",
+    digestChannelId:
+      (obj.digestChannelId as string | undefined)?.trim() || undefined,
+    highlightScore:
+      typeof obj.highlightScore === "number" ? obj.highlightScore : 5,
+    digestScore: typeof obj.digestScore === "number" ? obj.digestScore : 0,
+    votesEnabled: obj.votesEnabled === true,
+    voteRoleId: (obj.voteRoleId as string | undefined)?.trim() || undefined,
   };
 }
 
