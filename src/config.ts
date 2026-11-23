@@ -29,11 +29,8 @@ function loadConfig(): Config {
   if (typeof obj.guildId !== "string" || !obj.guildId.trim()) {
     errors.push("guildId (obligatoire)");
   }
-  if (
-    obj.googleApiKey !== undefined &&
-    (typeof obj.googleApiKey !== "string" || !obj.googleApiKey.trim())
-  ) {
-    errors.push("googleApiKey (string non vide)");
+  if (obj.googleApiKey !== undefined && typeof obj.googleApiKey !== "string") {
+    errors.push("googleApiKey (string)");
   }
   if (
     obj.rssFetchCron !== undefined &&
@@ -52,7 +49,7 @@ function loadConfig(): Config {
   }
   if (
     obj.adminChannelId !== undefined &&
-    (typeof obj.adminChannelId !== "string" || !obj.adminChannelId.trim())
+    typeof obj.adminChannelId !== "string"
   ) {
     errors.push("adminChannelId (id de salon)");
   }
